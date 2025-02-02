@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'dashboard.dart';
+import 'residents_list.dart';
 
 class CustomBottomBar extends StatelessWidget {
   final int selectedIndex;
@@ -10,6 +12,31 @@ class CustomBottomBar extends StatelessWidget {
     required this.selectedIndex,
     required this.onItemSelected,
   });
+
+  void _handleNavigation(BuildContext context, int index) {
+    onItemSelected(index);
+
+    // Handle navigation based on index
+    if (selectedIndex != index) {
+      switch (index) {
+        case 0:
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const DashboardScreen()),
+          );
+          break;
+        case 1:
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const ResidentsList()),
+          );
+          break;
+        case 2:
+          // Messages screen - to be implemented
+          break;
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +60,7 @@ class CustomBottomBar extends StatelessWidget {
       ),
       child: BottomNavigationBar(
         currentIndex: selectedIndex,
-        onTap: onItemSelected,
+        onTap: (index) => _handleNavigation(context, index),
         backgroundColor: Colors.transparent,
         elevation: 0,
         selectedItemColor: Colors.white,
@@ -45,29 +72,31 @@ class CustomBottomBar extends StatelessWidget {
         unselectedLabelStyle: GoogleFonts.poppins(
           fontSize: 12,
         ),
-        type:
-            BottomNavigationBarType.fixed, // Ensures labels are always visible
-        items: [
+        type: BottomNavigationBarType.fixed,
+        items: const [
           BottomNavigationBarItem(
-            icon: Container(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: const Icon(Icons.dashboard_rounded),
+            icon: Padding(
+              padding: EdgeInsets.symmetric(vertical: 4),
+              child: Icon(Icons.dashboard_rounded),
             ),
             label: 'Dashboard',
+            tooltip: 'View Dashboard',
           ),
           BottomNavigationBarItem(
-            icon: Container(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: const Icon(Icons.people_alt_rounded),
+            icon: Padding(
+              padding: EdgeInsets.symmetric(vertical: 4),
+              child: Icon(Icons.people_alt_rounded),
             ),
             label: 'Residents List',
+            tooltip: 'View Residents',
           ),
           BottomNavigationBarItem(
-            icon: Container(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: const Icon(Icons.message_rounded),
+            icon: Padding(
+              padding: EdgeInsets.symmetric(vertical: 4),
+              child: Icon(Icons.message_rounded),
             ),
             label: 'Messages',
+            tooltip: 'View Messages',
           ),
         ],
       ),

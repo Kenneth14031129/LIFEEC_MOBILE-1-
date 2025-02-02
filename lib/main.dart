@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lifeec_mobile/dashboard.dart';
+import 'package:lifeec_mobile/residents_list.dart';
 import 'login_page.dart';
 
 void main() {
@@ -76,7 +77,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const DashboardScreen(),
+      home: const ResidentsList(),
     );
   }
 }
