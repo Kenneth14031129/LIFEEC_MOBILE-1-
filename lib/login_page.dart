@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'services/auth_service.dart';
+import 'dashboard.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -81,43 +81,15 @@ class LoginPageState extends State<LoginPage>
     });
 
     try {
-      final authService = AuthService();
+      // Simulating a network delay
+      await Future.delayed(const Duration(seconds: 1));
 
-      if (isLogin) {
-        // Handle login
-        final response = await authService.login(
-          email: _emailController.text,
-          password: _passwordController.text,
+      if (mounted) {
+        // Simply navigate to dashboard after form validation
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const DashboardScreen()),
         );
-
-        // You can handle the successful login here
-        if (mounted) {
-          // Navigate to home page after successful login
-          // Replace HomePage() with your actual home page widget
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const HomePage()),
-          );
-        }
-      } else {
-        // Handle registration
-        final response = await authService.register(
-          fullName: _fullNameController.text,
-          email: _emailController.text,
-          password: _passwordController.text,
-          phone: _phoneController.text,
-          userType: _selectedUserType ?? 'nurse',
-        );
-
-        // You can handle the successful registration here
-        if (mounted) {
-          // Navigate to home page after successful registration
-          // Replace HomePage() with your actual home page widget
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const HomePage()),
-          );
-        }
       }
     } catch (error) {
       setState(() {

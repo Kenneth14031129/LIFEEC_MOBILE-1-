@@ -4,18 +4,19 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.5.3
+  sdk: '>=3.5.3 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
-  http: ^1.3.0  # For making HTTP requests to your API
-  shared_preferences: ^2.5.1  # For storing local data like tokens
-  provider: ^6.1.2  # For state management
-  flutter_secure_storage: ^9.2.4  # For storing sensitive data securely
-  intl: ^0.20.2  # For date formatting and localization
+  http: ^1.3.0
+  shared_preferences: ^2.5.1
+  provider: ^6.1.2
+  flutter_secure_storage: ^9.2.4
+  intl: ^0.20.2
   google_fonts: ^6.2.1
+  fl_chart: ^0.63.0
 
 dev_dependencies:
   flutter_test:
@@ -24,18 +25,3 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  
-  assets:
-    - assets/images/
-    - assets/icons/
-
-  fonts:
-    - family: Poppins
-      fonts:
-        - asset: assets/fonts/Poppins-Regular.ttf
-        - asset: assets/fonts/Poppins-Medium.ttf
-          weight: 500
-        - asset: assets/fonts/Poppins-SemiBold.ttf
-          weight: 600
-        - asset: assets/fonts/Poppins-Bold.ttf
-          weight: 700

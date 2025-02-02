@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-// Import your login page
-import 'login_page.dart'; // Make sure this path matches your file structure
+import 'package:lifeec_mobile/dashboard.dart';
+import 'login_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,11 +25,9 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor:
-              const Color(0xFF1E88E5), // Blue shade matching your login page
+          seedColor: const Color(0xFF1E88E5),
           brightness: Brightness.light,
         ),
-        // Configure text theme
         textTheme: const TextTheme(
           headlineLarge: TextStyle(
             fontWeight: FontWeight.bold,
@@ -41,7 +39,6 @@ class MyApp extends StatelessWidget {
           ),
           bodyLarge: TextStyle(fontSize: 16),
         ),
-        // Configure input decoration theme
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
           fillColor: Colors.grey[50],
@@ -62,7 +59,6 @@ class MyApp extends StatelessWidget {
             vertical: 16,
           ),
         ),
-        // Configure elevated button theme
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             elevation: 0,
@@ -74,15 +70,13 @@ class MyApp extends StatelessWidget {
             foregroundColor: Colors.white,
           ),
         ),
-        // Configure text button theme
         textButtonTheme: TextButtonThemeData(
           style: TextButton.styleFrom(
             foregroundColor: const Color(0xFF1E88E5),
           ),
         ),
       ),
-      // Set initial route to login page
-      home: const LoginPage(),
+      home: const DashboardScreen(),
     );
   }
 }
