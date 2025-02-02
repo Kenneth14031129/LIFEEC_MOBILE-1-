@@ -147,9 +147,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
                 const Spacer(),
-                _buildNotificationButton(),
-                const SizedBox(width: 16),
-                _buildProfileButton(),
+                IconButton(
+                  icon: const Icon(Icons.notifications_outlined),
+                  color: Colors.white,
+                  onPressed: () {},
+                ),
+                const SizedBox(width: 8),
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: Colors.white.withOpacity(0.2),
+                  child: Text(
+                    'N',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),

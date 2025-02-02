@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'HealthUpdateModal.dart';
+import 'activity_update_modal.dart';
+import 'meal_update_modal.dart';
 
 class ResidentDetails extends StatefulWidget {
   final Map<String, dynamic> resident;
@@ -573,8 +575,20 @@ class _ResidentDetailsState extends State<ResidentDetails> {
                   ],
                 ),
                 child: TextButton(
-                  onPressed: () {
-                    // Add your update meal plan logic here
+                  onPressed: () async {
+                    final result = await showDialog<Map<String, dynamic>>(
+                      context: context,
+                      builder: (context) => MealUpdateModal(
+                        currentMealData: meals[0], // Pass the current meal data
+                      ),
+                    );
+
+                    if (result != null) {
+                      setState(() {
+                        meals[0] =
+                            result; // Update the first meal with the new data
+                      });
+                    }
                   },
                   style: TextButton.styleFrom(
                     foregroundColor: Colors.white,
@@ -676,7 +690,7 @@ class _ResidentDetailsState extends State<ResidentDetails> {
             const Divider(),
             const SizedBox(height: 16),
             Text(
-              'Meal',
+              'Meal Details',
               style: GoogleFonts.poppins(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -766,8 +780,21 @@ class _ResidentDetailsState extends State<ResidentDetails> {
                   ],
                 ),
                 child: TextButton(
-                  onPressed: () {
-                    // Add your update activity plan logic here
+                  onPressed: () async {
+                    final result = await showDialog<Map<String, dynamic>>(
+                      context: context,
+                      builder: (context) => ActivityUpdateModal(
+                        currentActivityData:
+                            activities[0], // Pass the current activity data
+                      ),
+                    );
+
+                    if (result != null) {
+                      setState(() {
+                        activities[0] =
+                            result; // Update the first activity with the new data
+                      });
+                    }
                   },
                   style: TextButton.styleFrom(
                     foregroundColor: Colors.white,
