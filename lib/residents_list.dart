@@ -506,7 +506,7 @@ class _ResidentsListState extends State<ResidentsList> {
                   context,
                   MaterialPageRoute(
                     builder: (context) => ResidentDetails(
-                      resident: resident,
+                      residentId: resident['id'],
                     ),
                   ),
                 );
