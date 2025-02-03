@@ -5,11 +5,17 @@ const cors = require('cors');
 require('dotenv').config();
 
 const userRoutes = require('./routes/userRoutes');
+const residentRoutes = require('./routes/residentRoutes');
 
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: '*',  // For development only
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 app.use(express.json());
 
 // MongoDB Atlas Connection
@@ -19,6 +25,7 @@ mongoose.connect(process.env.MONGODB_URI)
 
 // Routes
 app.use('/api/users', userRoutes);
+app.use('/api/residents', residentRoutes);
 
 // Test Route
 app.get('/test', (req, res) => {
