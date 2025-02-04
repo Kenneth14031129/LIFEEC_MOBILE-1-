@@ -162,7 +162,6 @@ class _ResidentDetailsState extends State<ResidentDetails> {
 
       // Create the request body
       final requestBody = {
-        'date': DateTime.now().toIso8601String(),
         'status': status,
         // Join arrays into comma-separated strings
         'allergies': updatedData['allergies']?.join(', ') ?? '',
@@ -313,6 +312,40 @@ class _ResidentDetailsState extends State<ResidentDetails> {
   String _formatDate(String dateString) {
     final date = DateTime.parse(dateString);
     return '${date.year}/${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}';
+  }
+
+  String _formatTimeToStandard(String? militaryTime) {
+    if (militaryTime == null || militaryTime.isEmpty) {
+      return 'Not specified';
+    }
+
+    try {
+      // Handle different time formats
+      DateTime dateTime;
+      if (militaryTime.contains(':')) {
+        final parts = militaryTime.split(':');
+        final hour = int.parse(parts[0]);
+        final minute =
+            int.parse(parts[1].split(' ')[0]); // Remove AM/PM if present
+        dateTime = DateTime(2024, 1, 1, hour, minute);
+      } else {
+        final hour = int.parse(militaryTime);
+        dateTime = DateTime(2024, 1, 1, hour, 0);
+      }
+
+      // Format to 12-hour time
+      final hour = dateTime.hour > 12 ? dateTime.hour - 12 : dateTime.hour;
+      final period = dateTime.hour >= 12 ? 'PM' : 'AM';
+      final hourString = hour == 0 ? '12' : hour.toString();
+      final minuteString = dateTime.minute.toString().padLeft(2, '0');
+
+      return '$hourString:$minuteString $period';
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error formatting time: $e');
+      }
+      return militaryTime; // Return original if parsing fails
+    }
   }
 
   @override
@@ -700,7 +733,11 @@ class _ResidentDetailsState extends State<ResidentDetails> {
                       _buildInfoRow('Quantity:', medication['quantity']),
                       _buildInfoRow(
                         'Time:',
-                        medication['time']?.join(', ') ?? 'Not specified',
+                        (medication['time'] as List?)
+                                ?.map((time) =>
+                                    _formatTimeToStandard(time.toString()))
+                                .join(', ') ??
+                            'Not specified',
                       ),
                       _buildInfoRow('Status:', medication['status']),
                     ],

@@ -1,5 +1,133 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+
+class CustomTimePicker extends StatefulWidget {
+  final String initialTime;
+  final Function(String) onTimeSelected;
+
+  const CustomTimePicker({
+    super.key,
+    required this.initialTime,
+    required this.onTimeSelected,
+  });
+
+  @override
+  State<CustomTimePicker> createState() => _CustomTimePickerState();
+}
+
+class _CustomTimePickerState extends State<CustomTimePicker> {
+  late String displayTime;
+
+  @override
+  void initState() {
+    super.initState();
+    displayTime = _formatTime(widget.initialTime);
+  }
+
+  String _formatTime(String time) {
+    if (time.isEmpty) return '';
+    try {
+      // Handle different time formats
+      DateTime dateTime;
+      if (time.contains(':')) {
+        // If time is in HH:mm format
+        final parts = time.split(':');
+        final hour = int.parse(parts[0]);
+        final minute =
+            int.parse(parts[1].split(' ')[0]); // Remove AM/PM if present
+        dateTime = DateTime(2024, 1, 1, hour, minute);
+      } else {
+        return time; // Return original if format is unexpected
+      }
+      return DateFormat('h:mm a').format(dateTime);
+    } catch (e) {
+      return time;
+    }
+  }
+
+  String _convertTo24Hour(String time12) {
+    try {
+      final format = DateFormat('h:mm a');
+      final dateTime = format.parse(time12);
+      return DateFormat('HH:mm').format(dateTime);
+    } catch (e) {
+      return time12;
+    }
+  }
+
+  Future<void> _selectTime(BuildContext context) async {
+    TimeOfDay initialTime;
+    try {
+      if (displayTime.isNotEmpty) {
+        final format = DateFormat('h:mm a');
+        final dateTime = format.parse(displayTime);
+        initialTime = TimeOfDay.fromDateTime(dateTime);
+      } else {
+        initialTime = TimeOfDay.now();
+      }
+    } catch (e) {
+      initialTime = TimeOfDay.now();
+    }
+
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: initialTime,
+      builder: (BuildContext context, Widget? child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            timePickerTheme: TimePickerThemeData(
+              backgroundColor: Colors.white,
+              hourMinuteTextColor: Colors.blue[800],
+              dialBackgroundColor: Colors.grey[100],
+              dialHandColor: Colors.blue[600],
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        final dateTime = DateTime(2024, 1, 1, picked.hour, picked.minute);
+        displayTime = DateFormat('h:mm a').format(dateTime);
+        widget.onTimeSelected(_convertTo24Hour(displayTime));
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () => _selectTime(context),
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 8,
+        ),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey[300]!),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.access_time, size: 20, color: Colors.grey[600]),
+            const SizedBox(width: 8),
+            Text(
+              displayTime.isEmpty ? 'Select time' : displayTime,
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: displayTime.isEmpty ? Colors.grey[600] : Colors.black87,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class HealthUpdateModal extends StatefulWidget {
   final Map<String, dynamic> currentHealthData;
@@ -223,74 +351,21 @@ class _HealthUpdateModalState extends State<HealthUpdateModal> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Medication ${index + 1}',
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.red),
-                      onPressed: () {
-                        setState(() {
-                          medications.removeAt(index);
-                        });
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                _buildMedicationField(
-                  'Medication',
-                  medication['medication'] ?? '',
-                  (value) {
-                    setState(() {
-                      medication['medication'] = value;
-                    });
-                  },
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildMedicationField(
-                        'Dosage',
-                        medication['dosage'] ?? '',
-                        (value) {
-                          setState(() {
-                            medication['dosage'] = value;
-                          });
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildMedicationField(
-                        'Quantity',
-                        medication['quantity'] ?? '',
-                        (value) {
-                          setState(() {
-                            medication['quantity'] = value;
-                          });
-                        },
-                      ),
-                    ),
-                  ],
-                ),
+                // ... other fields ...
                 const SizedBox(height: 8),
                 _buildMedicationField(
                   'Time',
-                  medication['time']?.join(', ') ?? '',
+                  medication['time'] is List
+                      ? medication['time'].join(', ')
+                      : medication['time'] ?? '',
                   (value) {
                     setState(() {
-                      medication['time'] =
-                          value.split(',').map((e) => e.trim()).toList();
+                      medication['time'] = [
+                        value
+                      ]; // Store as a single time for now
                     });
                   },
+                  isTimeField: true, // Set this to true for time fields
                 ),
               ],
             ),
@@ -303,8 +378,9 @@ class _HealthUpdateModalState extends State<HealthUpdateModal> {
   Widget _buildMedicationField(
     String label,
     String initialValue,
-    Function(String) onChanged,
-  ) {
+    Function(String) onChanged, {
+    bool isTimeField = false,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -316,28 +392,34 @@ class _HealthUpdateModalState extends State<HealthUpdateModal> {
           ),
         ),
         const SizedBox(height: 4),
-        TextField(
-          controller: TextEditingController(text: initialValue),
-          onChanged: onChanged,
-          decoration: InputDecoration(
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 8,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.blue[400]!),
+        if (isTimeField)
+          CustomTimePicker(
+            initialTime: initialValue,
+            onTimeSelected: onChanged,
+          )
+        else
+          TextField(
+            controller: TextEditingController(text: initialValue),
+            onChanged: onChanged,
+            decoration: InputDecoration(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 8,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey[300]!),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey[300]!),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.blue[400]!),
+              ),
             ),
           ),
-        ),
       ],
     );
   }
