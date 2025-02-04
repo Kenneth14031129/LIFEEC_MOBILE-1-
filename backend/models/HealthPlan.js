@@ -12,8 +12,8 @@ const healthPlanSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['Active', 'Critical'],
-    default: 'Active'
+    enum: ['Critical', 'Stable'],
+    default: 'Stable' 
   },
   allergies: String,
   medicalCondition: String,

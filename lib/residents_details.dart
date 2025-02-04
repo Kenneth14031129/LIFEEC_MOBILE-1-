@@ -6,6 +6,7 @@ import 'dart:convert';
 
 import 'HealthUpdateModal.dart';
 import 'activity_update_modal.dart';
+import 'health_history_view.dart';
 import 'meal_update_modal.dart';
 
 class ResidentDetails extends StatefulWidget {
@@ -155,9 +156,9 @@ class _ResidentDetailsState extends State<ResidentDetails> {
           : null;
 
       // Ensure status is a valid enum value
-      String status = healthData['status'] ?? 'Active';
-      if (status != 'Active' && status != 'Critical') {
-        status = 'Active'; // Default to 'Active' if invalid value
+      String status = updatedData['status'] ?? 'Stable';
+      if (status != 'Critical' && status != 'Stable') {
+        status = 'Stable'; // Default to 'Stable' if invalid value
       }
 
       // Create the request body
@@ -416,6 +417,10 @@ class _ResidentDetailsState extends State<ResidentDetails> {
   }
 
   Widget _buildHeader() {
+    // Get status from healthData instead of residentData
+    final status = healthData['status'] ?? 'Stable';
+    final isCritical = status == 'Critical';
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -489,22 +494,28 @@ class _ResidentDetailsState extends State<ResidentDetails> {
               vertical: 6,
             ),
             decoration: BoxDecoration(
-              color: residentData['status'] == 'Critical'
+              color: isCritical
                   ? Colors.red[700]!.withOpacity(0.2)
                   : Colors.green[700]!.withOpacity(0.2),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: residentData['status'] == 'Critical'
+                color: isCritical
                     ? Colors.red[700]!.withOpacity(0.6)
                     : Colors.green[700]!.withOpacity(0.6),
               ),
             ),
-            child: Text(
-              residentData['status'] ?? 'Unknown',
-              style: GoogleFonts.poppins(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(width: 4),
+                Text(
+                  status,
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -647,7 +658,14 @@ class _ResidentDetailsState extends State<ResidentDetails> {
               child: _buildGradientButton(
                 'View Health History',
                 () {
-                  // Add your view health history logic here
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => HealthHistoryView(
+                        residentId: widget.residentId,
+                      ),
+                    ),
+                  );
                 },
               ),
             ),
@@ -769,11 +787,6 @@ class _ResidentDetailsState extends State<ResidentDetails> {
         _buildInfoRow(
           'Special Instructions:',
           healthData['instructions'] ?? 'No special instructions at this time.',
-        ),
-        const SizedBox(height: 12),
-        _buildInfoRow(
-          'Status:',
-          healthData['status'] ?? 'Active',
         ),
       ],
     );

@@ -24,6 +24,29 @@ const healthPlanController = {
     }
   },
 
+    // Get health history for a resident
+    getHealthHistory: async (req, res) => {
+      try {
+        console.log('Fetching health history for residentId:', req.params.residentId);
+        
+        const healthRecords = await HealthPlan.find({
+          residentId: new mongoose.Types.ObjectId(req.params.residentId)
+        })
+        .sort({ createdAt: -1 }); // Sort by creation date, newest first
+        
+        if (!healthRecords || healthRecords.length === 0) {
+          console.log('No health records found for resident');
+          return res.status(404).json({ message: 'No health records found' });
+        }
+        
+        console.log(`Found ${healthRecords.length} health records`);
+        res.json(healthRecords);
+      } catch (error) {
+        console.error('Error in getHealthHistory:', error);
+        res.status(500).json({ message: error.message });
+      }
+    },
+
   // Get health plan by ID
   getHealthPlanById: async (req, res) => {
     try {

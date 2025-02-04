@@ -6,6 +6,9 @@ const healthPlanController = require('../controllers/healthPlanController');
 // Get health plan by resident ID
 router.get('/resident/:residentId', healthPlanController.getHealthPlan);
 
+// Get all health plans for a resident (history)
+router.get('/history/:residentId', healthPlanController.getHealthHistory);
+
 // Get health plan by ID
 router.get('/:id', healthPlanController.getHealthPlanById);
 

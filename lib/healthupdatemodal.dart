@@ -147,10 +147,28 @@ class _HealthUpdateModalState extends State<HealthUpdateModal> {
   late TextEditingController _assessmentNotesController;
   late TextEditingController _specialInstructionsController;
   late List<Map<String, dynamic>> medications;
+  String _selectedStatus = 'Stable';
 
   @override
   void initState() {
     super.initState();
+
+    // Initialize status with proper mapping of values
+    final currentStatus = widget.currentHealthData['status'];
+    if (currentStatus != null) {
+      // Map any incoming status to our valid options
+      switch (currentStatus.toString().toLowerCase()) {
+        case 'active':
+        case 'stable':
+          _selectedStatus = 'Stable';
+          break;
+        case 'critical':
+          _selectedStatus = 'Critical';
+          break;
+        default:
+          _selectedStatus = 'Stable'; // Default fallback
+      }
+    }
 
     // Handle allergies that might be a string or a list
     final allergies = widget.currentHealthData['allergies'];
@@ -251,6 +269,50 @@ class _HealthUpdateModalState extends State<HealthUpdateModal> {
                 ],
               ),
               const SizedBox(height: 20),
+              // Add status selection
+              Text(
+                'Resident Status',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.blue[800],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey[300]!),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: DropdownButton<String>(
+                  value: _selectedStatus,
+                  isExpanded: true,
+                  underline: Container(),
+                  items: ['Stable', 'Critical'].map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(
+                        value,
+                        style: GoogleFonts.poppins(
+                          color: value == 'Critical'
+                              ? Colors.red
+                              : Colors.green[700],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    if (newValue != null) {
+                      setState(() {
+                        _selectedStatus = newValue;
+                      });
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
               _buildTextField(
                 'Allergies',
                 'Enter allergies (comma-separated)',
@@ -633,6 +695,7 @@ class _HealthUpdateModalState extends State<HealthUpdateModal> {
             child: TextButton(
               onPressed: () {
                 final updatedHealthData = {
+                  'status': _selectedStatus,
                   'allergies': _allergiesController.text
                       .split(',')
                       .map((e) => e.trim())
