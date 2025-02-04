@@ -19,7 +19,6 @@ class _ResidentsListState extends State<ResidentsList> {
   List<Map<String, dynamic>> residents = [];
   int _selectedIndex = 1;
   String _searchQuery = '';
-  String _selectedFilter = 'All';
   String? _error;
 
   @override
@@ -63,15 +62,10 @@ class _ResidentsListState extends State<ResidentsList> {
                     'id': resident['_id'],
                     'name': resident['fullName'] ?? 'Unknown',
                     'dateOfBirth': _formatDate(resident['dateOfBirth']),
-                    'status': resident['status'] == 'critical'
-                        ? 'Critical'
-                        : 'Active',
                     'location': resident['address'] ?? 'No address',
                     'lastUpdated': DateTime.parse(resident['updatedAt']),
                     'gender': resident['gender'] ?? 'Not specified',
                     'phone': resident['contactNumber'] ?? 'No phone',
-                    'email':
-                        'No email', // Since email is not in your backend model
                     'emergencyContact': {
                       'name': resident['emergencyContact']['name'] ?? 'No name',
                       'phone':
@@ -79,8 +73,6 @@ class _ResidentsListState extends State<ResidentsList> {
                       'email':
                           resident['emergencyContact']['email'] ?? 'No email',
                     },
-                    'nurseAssigned':
-                        resident['createdBy']?['fullName'] ?? 'Not Assigned',
                   })
               .toList();
           isLoading = false;
@@ -125,13 +117,10 @@ class _ResidentsListState extends State<ResidentsList> {
 
   List<Map<String, dynamic>> get filteredResidents {
     return residents.where((resident) {
-      final matchesSearch = resident['name']
+      return resident['name']
           .toString()
           .toLowerCase()
           .contains(_searchQuery.toLowerCase());
-      final matchesFilter =
-          _selectedFilter == 'All' || resident['status'] == _selectedFilter;
-      return matchesSearch && matchesFilter;
     }).toList();
   }
 
@@ -287,51 +276,23 @@ class _ResidentsListState extends State<ResidentsList> {
   }
 
   Widget _buildSearchAndFilter() {
-    return Row(
-      children: [
-        Expanded(
-          child: TextField(
-            onChanged: _onSearchChanged,
-            decoration: InputDecoration(
-              hintText: 'Search residents...',
-              hintStyle: GoogleFonts.poppins(color: Colors.grey),
-              prefixIcon: const Icon(Icons.search),
-              fillColor: Colors.white,
-              filled: true,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(15),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 16,
-              ),
-            ),
-          ),
+    return TextField(
+      onChanged: _onSearchChanged,
+      decoration: InputDecoration(
+        hintText: 'Search residents...',
+        hintStyle: GoogleFonts.poppins(color: Colors.grey),
+        prefixIcon: const Icon(Icons.search),
+        fillColor: Colors.white,
+        filled: true,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(15),
+          borderSide: BorderSide.none,
         ),
-        const SizedBox(width: 16),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(15),
-          ),
-          child: DropdownButton<String>(
-            value: _selectedFilter,
-            underline: const SizedBox(),
-            items: ['All', 'Active', 'Critical']
-                .map((status) => DropdownMenuItem(
-                      value: status,
-                      child: Text(status, style: GoogleFonts.poppins()),
-                    ))
-                .toList(),
-            onChanged: (value) {
-              setState(() => _selectedFilter = value!);
-              _fetchResidents();
-            },
-          ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 16,
         ),
-      ],
+      ),
     );
   }
 
@@ -390,8 +351,6 @@ class _ResidentsListState extends State<ResidentsList> {
   }
 
   Widget _buildResidentCard(Map<String, dynamic> resident) {
-    final bool isCritical = resident['status'] == 'Critical';
-
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 0,
@@ -448,23 +407,6 @@ class _ResidentsListState extends State<ResidentsList> {
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isCritical ? Colors.red[50] : Colors.green[50],
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    resident['status'],
-                    style: GoogleFonts.poppins(
-                      color: isCritical ? Colors.red[700] : Colors.green[700],
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -478,8 +420,6 @@ class _ResidentsListState extends State<ResidentsList> {
                 _buildInfoRow('Gender:', resident['gender']),
                 const SizedBox(height: 8),
                 _buildInfoRow('Phone:', resident['phone']),
-                const SizedBox(height: 8),
-                _buildInfoRow('Email:', resident['email']),
                 const SizedBox(height: 16),
                 const Divider(),
                 const SizedBox(height: 16),
@@ -493,10 +433,11 @@ class _ResidentsListState extends State<ResidentsList> {
                 ),
                 const SizedBox(height: 8),
                 _buildInfoRow('Name:', resident['emergencyContact']['name']),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 _buildInfoRow('Phone:', resident['emergencyContact']['phone']),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 _buildInfoRow('Email:', resident['emergencyContact']['email']),
+                const SizedBox(height: 16),
               ],
             ),
             const SizedBox(height: 16),
