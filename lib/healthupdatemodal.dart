@@ -23,23 +23,64 @@ class _HealthUpdateModalState extends State<HealthUpdateModal> {
   @override
   void initState() {
     super.initState();
-    _allergiesController = TextEditingController(
-      text: widget.currentHealthData['allergies']?.join(', ') ?? '',
-    );
-    _conditionsController = TextEditingController(
-      text: widget.currentHealthData['conditions']?.join(', ') ?? '',
-    );
+
+    // Handle allergies that might be a string or a list
+    final allergies = widget.currentHealthData['allergies'];
+    String allergiesText = '';
+    if (allergies != null) {
+      if (allergies is List) {
+        allergiesText = allergies.join(', ');
+      } else {
+        allergiesText = allergies.toString();
+      }
+    }
+    _allergiesController = TextEditingController(text: allergiesText);
+
+    // Handle conditions that might be a string or a list
+    final conditions = widget.currentHealthData['conditions'];
+    String conditionsText = '';
+    if (conditions != null) {
+      if (conditions is List) {
+        conditionsText = conditions.join(', ');
+      } else {
+        conditionsText = conditions.toString();
+      }
+    }
+    _conditionsController = TextEditingController(text: conditionsText);
+
     _assessmentNotesController = TextEditingController(
-      text: widget.currentHealthData['assessmentNotes'] ??
+      text: widget.currentHealthData['assessment'] ??
+          widget.currentHealthData['assessmentNotes'] ??
           'No specific notes at this time.',
     );
+
     _specialInstructionsController = TextEditingController(
-      text: widget.currentHealthData['specialInstructions'] ??
+      text: widget.currentHealthData['instructions'] ??
+          widget.currentHealthData['specialInstructions'] ??
           'No special instructions at this time.',
     );
-    medications = List<Map<String, dynamic>>.from(
-      widget.currentHealthData['medications'] ?? [],
-    );
+
+    // Handle medications that might be a single object or a list
+    if (widget.currentHealthData['medications'] is List) {
+      medications = List<Map<String, dynamic>>.from(
+        widget.currentHealthData['medications'],
+      );
+    } else if (widget.currentHealthData['medications'] != null) {
+      // If it's a single medication object, create a list with one item
+      medications = [
+        {
+          'medication': widget.currentHealthData['medications'],
+          'dosage': widget.currentHealthData['dosage'] ?? '',
+          'quantity': widget.currentHealthData['quantity'] ?? '',
+          'time': widget.currentHealthData['medicationTime'] ?? '',
+          'status': widget.currentHealthData['isMedicationTaken']
+              ? 'Taken'
+              : 'Not taken'
+        }
+      ];
+    } else {
+      medications = [];
+    }
   }
 
   @override
@@ -442,7 +483,21 @@ class _HealthUpdateModalState extends State<HealthUpdateModal> {
                       .map((e) => e.trim())
                       .where((e) => e.isNotEmpty)
                       .toList(),
-                  'medications': medications,
+                  'medications': medications
+                      .map((med) => {
+                            'medication': med['medication'],
+                            'dosage': med['dosage'],
+                            'quantity': med['quantity'],
+                            'time': med['time'] is List
+                                ? med['time']
+                                : med['time']
+                                    .toString()
+                                    .split(',')
+                                    .map((e) => e.trim())
+                                    .toList(),
+                            'status': med['status']
+                          })
+                      .toList(),
                   'assessmentNotes': _assessmentNotesController.text,
                   'specialInstructions': _specialInstructionsController.text,
                 };

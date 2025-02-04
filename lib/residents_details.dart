@@ -103,6 +103,7 @@ class _ResidentDetailsState extends State<ResidentDetails> {
         final data = json.decode(response.body);
         setState(() {
           healthData = {
+            'id': data['_id'],
             'allergies': data['allergies'] ?? 'None',
             'medications': [
               {
@@ -139,6 +140,91 @@ class _ResidentDetailsState extends State<ResidentDetails> {
           'date': 'Not specified',
         };
       });
+    }
+  }
+
+  Future<void> _updateHealthPlan(Map<String, dynamic> updatedData) async {
+    try {
+      if (healthData['id'] == null) {
+        throw Exception('Health plan ID not found');
+      }
+
+      // Transform the data to match backend expectations
+      final medication = updatedData['medications']?.isNotEmpty == true
+          ? updatedData['medications'][0]
+          : null;
+
+      // Ensure status is a valid enum value
+      String status = healthData['status'] ?? 'Active';
+      if (status != 'Active' && status != 'Critical') {
+        status = 'Active'; // Default to 'Active' if invalid value
+      }
+
+      // Create the request body
+      final requestBody = {
+        'date': DateTime.now().toIso8601String(),
+        'status': status,
+        // Join arrays into comma-separated strings
+        'allergies': updatedData['allergies']?.join(', ') ?? '',
+        'medicalCondition': updatedData['conditions']?.join(', ') ?? '',
+        // Extract medication details
+        'medications': medication?['medication'] ?? '',
+        'dosage': medication?['dosage'] ?? '',
+        'quantity': medication?['quantity'] ?? '',
+        'medicationTime': medication?['time'] is List
+            ? medication['time'].join(', ')
+            : medication?['time'] ?? '',
+        'isMedicationTaken': false,
+        // Map assessment fields
+        'assessment': updatedData['assessmentNotes'] ?? '',
+        'instructions': updatedData['specialInstructions'] ?? ''
+      };
+
+      // Log the request for debugging
+      if (kDebugMode) {
+        print('Updating health plan with data: $requestBody');
+      }
+
+      final response = await http.put(
+        Uri.parse('http://localhost:5001/api/healthplans/${healthData['id']}'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(requestBody),
+      );
+
+      if (response.statusCode != 200) {
+        if (kDebugMode) {
+          print('Server response: ${response.body}');
+        }
+        throw Exception('Failed to update health plan: ${response.statusCode}');
+      }
+
+      // Show success message
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Health plan updated successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Refresh the health data
+        await _fetchHealthData();
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error updating health plan: $e');
+      }
+      // Show error message to user
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update health plan: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -515,9 +601,10 @@ class _ResidentDetailsState extends State<ResidentDetails> {
                   );
 
                   if (result != null) {
-                    setState(() {
-                      healthData = result;
-                    });
+                    // Call API to update health plan
+                    await _updateHealthPlan(result);
+                    // Refresh the health data
+                    await _fetchHealthData();
                   }
                 },
               ),
@@ -560,14 +647,18 @@ class _ResidentDetailsState extends State<ResidentDetails> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Update this Row to prevent overflow
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Medication Details',
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+            Expanded(
+              // Add Expanded here
+              child: Text(
+                'Medication Details',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             Text(
@@ -607,8 +698,10 @@ class _ResidentDetailsState extends State<ResidentDetails> {
                       _buildInfoRow('Medication:', medication['medication']),
                       _buildInfoRow('Dosage:', medication['dosage']),
                       _buildInfoRow('Quantity:', medication['quantity']),
-                      _buildInfoRow('Time:',
-                          medication['time']?.join(', ') ?? 'Not specified'),
+                      _buildInfoRow(
+                        'Time:',
+                        medication['time']?.join(', ') ?? 'Not specified',
+                      ),
                       _buildInfoRow('Status:', medication['status']),
                     ],
                   ),
