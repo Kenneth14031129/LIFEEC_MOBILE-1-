@@ -351,7 +351,64 @@ class _HealthUpdateModalState extends State<HealthUpdateModal> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ... other fields ...
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Medication ${index + 1}',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, color: Colors.red),
+                      onPressed: () {
+                        setState(() {
+                          medications.removeAt(index);
+                        });
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _buildMedicationField(
+                  'Medication',
+                  medication['medication'] ?? '',
+                  (value) {
+                    setState(() {
+                      medication['medication'] = value;
+                    });
+                  },
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildMedicationField(
+                        'Dosage',
+                        medication['dosage'] ?? '',
+                        (value) {
+                          setState(() {
+                            medication['dosage'] = value;
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildMedicationField(
+                        'Quantity',
+                        medication['quantity'] ?? '',
+                        (value) {
+                          setState(() {
+                            medication['quantity'] = value;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 8),
                 _buildMedicationField(
                   'Time',
@@ -360,12 +417,33 @@ class _HealthUpdateModalState extends State<HealthUpdateModal> {
                       : medication['time'] ?? '',
                   (value) {
                     setState(() {
-                      medication['time'] = [
-                        value
-                      ]; // Store as a single time for now
+                      medication['time'] = [value];
                     });
                   },
-                  isTimeField: true, // Set this to true for time fields
+                  isTimeField: true,
+                ),
+                const SizedBox(height: 12),
+                // Add medication taken checkbox
+                Row(
+                  children: [
+                    Checkbox(
+                      value: medication['status'] == 'Taken',
+                      onChanged: (bool? value) {
+                        setState(() {
+                          medication['status'] =
+                              value == true ? 'Taken' : 'Not taken';
+                        });
+                      },
+                      activeColor: Colors.blue[600],
+                    ),
+                    Text(
+                      'Medication has been taken',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

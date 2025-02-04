@@ -173,7 +173,7 @@ class _ResidentDetailsState extends State<ResidentDetails> {
         'medicationTime': medication?['time'] is List
             ? medication['time'].join(', ')
             : medication?['time'] ?? '',
-        'isMedicationTaken': false,
+        'isMedicationTaken': medication?['status'] == 'Taken',
         // Map assessment fields
         'assessment': updatedData['assessmentNotes'] ?? '',
         'instructions': updatedData['specialInstructions'] ?? ''
