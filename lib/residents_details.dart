@@ -183,19 +183,33 @@ class _ResidentDetailsState extends State<ResidentDetails> {
     }
   }
 
+// Update the _fetchActivityData method
   Future<void> _fetchActivityData() async {
     try {
       final response = await http.get(
         Uri.parse(
-            'http://localhost:5001/api/residents/${widget.residentId}/activities'),
+            'http://localhost:5001/api/activities/resident/${widget.residentId}'),
         headers: {'Content-Type': 'application/json'},
       );
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         setState(() {
-          activities =
-              data.map((activity) => activity as Map<String, dynamic>).toList();
+          activities = data
+              .map((activity) => {
+                    'id': activity['_id'],
+                    'activity name': activity['name'],
+                    'date': activity['date'] ?? 'Not specified',
+                    'description':
+                        activity['description'] ?? 'No description available',
+                    'status': activity['status'] ?? 'Not Started',
+                    'duration':
+                        activity['duration']?.toString() ?? 'Not specified',
+                    'location': activity['location'] ?? 'Not specified',
+                    'notes': activity['notes'] ?? '',
+                    'completed': activity['status'] == 'Completed'
+                  })
+              .toList();
         });
       } else {
         throw Exception('Failed to load activity data');
@@ -204,7 +218,6 @@ class _ResidentDetailsState extends State<ResidentDetails> {
       if (kDebugMode) {
         print('Error fetching activity data: $e');
       }
-      // Set default activity data in case of error
       setState(() {
         activities = [];
       });
