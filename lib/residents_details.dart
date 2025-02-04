@@ -142,18 +142,33 @@ class _ResidentDetailsState extends State<ResidentDetails> {
     }
   }
 
+// Update the _fetchMealData method
   Future<void> _fetchMealData() async {
     try {
       final response = await http.get(
         Uri.parse(
-            'http://localhost:5001/api/residents/${widget.residentId}/meals'),
+            'http://localhost:5001/api/meals/resident/${widget.residentId}'),
         headers: {'Content-Type': 'application/json'},
       );
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         setState(() {
-          meals = data.map((meal) => meal as Map<String, dynamic>).toList();
+          meals = data
+              .map((meal) => {
+                    'id': meal['_id'],
+                    'date': meal['date'] ?? 'Not specified',
+                    'breakfast': meal['breakfast'] ?? 'Not specified',
+                    'lunch': meal['lunch'] ?? 'Not specified',
+                    'snacks': meal['snacks'] ?? 'Not specified',
+                    'dinner': meal['dinner'] ?? 'Not specified',
+                    'dietary needs': meal['dietaryNeeds'] ?? 'None specified',
+                    'nutritional goals':
+                        meal['nutritionalGoals'] ?? 'None specified',
+                    'completed':
+                        false // You might want to add this field to your backend
+                  })
+              .toList();
         });
       } else {
         throw Exception('Failed to load meal data');
@@ -162,7 +177,6 @@ class _ResidentDetailsState extends State<ResidentDetails> {
       if (kDebugMode) {
         print('Error fetching meal data: $e');
       }
-      // Set default meal data in case of error
       setState(() {
         meals = [];
       });

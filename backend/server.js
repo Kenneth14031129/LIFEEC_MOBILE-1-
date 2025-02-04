@@ -7,6 +7,7 @@ require('dotenv').config();
 const userRoutes = require('./routes/userRoutes');
 const residentRoutes = require('./routes/residentRoutes');
 const healthPlanRoutes = require('./routes/healthPlanRoutes');
+const mealRecordRoutes = require('./routes/mealRecordRoutes');
 
 const app = express();
 
@@ -38,6 +39,8 @@ mongoose.connect(process.env.MONGODB_URI)
 app.use('/api/users', userRoutes);
 app.use('/api/residents', residentRoutes);
 app.use('/api/healthplans', healthPlanRoutes);
+app.use('/api/meals', mealRecordRoutes);
+
 
 // Test Routes
 app.get('/test', (req, res) => {
