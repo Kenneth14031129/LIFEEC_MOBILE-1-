@@ -206,13 +206,24 @@ class _HealthUpdateModalState extends State<HealthUpdateModal> {
           'No special instructions at this time.',
     );
 
-    // Handle medications that might be a single object or a list
+    // Replace the medications initialization with this new code
     if (widget.currentHealthData['medications'] is List) {
       medications = List<Map<String, dynamic>>.from(
-        widget.currentHealthData['medications'],
+        widget.currentHealthData['medications'].map((med) => {
+              'medication': med['medication'] ?? '',
+              'dosage': med['dosage'] ?? '',
+              'quantity': med['quantity'] ?? '',
+              'time': med['time'] ?? '',
+              'status': med['status'] ?? 'Not taken',
+              'medicationController':
+                  TextEditingController(text: med['medication'] ?? ''),
+              'dosageController':
+                  TextEditingController(text: med['dosage'] ?? ''),
+              'quantityController':
+                  TextEditingController(text: med['quantity'] ?? ''),
+            }),
       );
     } else if (widget.currentHealthData['medications'] != null) {
-      // If it's a single medication object, create a list with one item
       medications = [
         {
           'medication': widget.currentHealthData['medications'],
@@ -221,7 +232,13 @@ class _HealthUpdateModalState extends State<HealthUpdateModal> {
           'time': widget.currentHealthData['medicationTime'] ?? '',
           'status': widget.currentHealthData['isMedicationTaken']
               ? 'Taken'
-              : 'Not taken'
+              : 'Not taken',
+          'medicationController': TextEditingController(
+              text: widget.currentHealthData['medications']),
+          'dosageController': TextEditingController(
+              text: widget.currentHealthData['dosage'] ?? ''),
+          'quantityController': TextEditingController(
+              text: widget.currentHealthData['quantity'] ?? ''),
         }
       ];
     } else {
@@ -231,6 +248,11 @@ class _HealthUpdateModalState extends State<HealthUpdateModal> {
 
   @override
   void dispose() {
+    for (var medication in medications) {
+      medication['medicationController'].dispose();
+      medication['dosageController'].dispose();
+      medication['quantityController'].dispose();
+    }
     _allergiesController.dispose();
     _conditionsController.dispose();
     _assessmentNotesController.dispose();
@@ -442,6 +464,7 @@ class _HealthUpdateModalState extends State<HealthUpdateModal> {
                       medication['medication'] = value;
                     });
                   },
+                  controller: medication['medicationController'],
                 ),
                 const SizedBox(height: 8),
                 Row(
@@ -455,6 +478,7 @@ class _HealthUpdateModalState extends State<HealthUpdateModal> {
                             medication['dosage'] = value;
                           });
                         },
+                        controller: medication['dosageController'],
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -467,6 +491,7 @@ class _HealthUpdateModalState extends State<HealthUpdateModal> {
                             medication['quantity'] = value;
                           });
                         },
+                        controller: medication['quantityController'],
                       ),
                     ),
                   ],
@@ -520,6 +545,7 @@ class _HealthUpdateModalState extends State<HealthUpdateModal> {
     String initialValue,
     Function(String) onChanged, {
     bool isTimeField = false,
+    TextEditingController? controller,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -539,7 +565,7 @@ class _HealthUpdateModalState extends State<HealthUpdateModal> {
           )
         else
           TextField(
-            controller: TextEditingController(text: initialValue),
+            controller: controller, // Use the passed controller
             onChanged: onChanged,
             decoration: InputDecoration(
               contentPadding: const EdgeInsets.symmetric(

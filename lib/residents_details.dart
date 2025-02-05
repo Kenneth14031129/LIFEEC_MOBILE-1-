@@ -269,6 +269,55 @@ class _ResidentDetailsState extends State<ResidentDetails> {
     }
   }
 
+  Future<void> _updateMealPlan(Map<String, dynamic> updatedData) async {
+    try {
+      if (meals.isEmpty || meals[0]['id'] == null) {
+        throw Exception('No meal record ID found to update');
+      }
+
+      final response = await http.put(
+        Uri.parse('http://localhost:5001/api/meals/${meals[0]['id']}'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'date': updatedData['date'],
+          'breakfast': updatedData['breakfast'],
+          'lunch': updatedData['lunch'],
+          'dinner': updatedData['dinner'],
+          'snacks': updatedData['snacks'],
+          'dietaryNeeds': updatedData['dietary needs'],
+          'nutritionalGoals': updatedData['nutritional goals']
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Meal plan updated successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          // Refresh the meal data
+          await _fetchMealData();
+        }
+      } else {
+        throw Exception('Failed to update meal plan: ${response.statusCode}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error updating meal plan: $e');
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update meal plan: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
 // Update the _fetchActivityData method
   Future<void> _fetchActivityData() async {
     try {
@@ -826,19 +875,12 @@ class _ResidentDetailsState extends State<ResidentDetails> {
                   final result = await showDialog<Map<String, dynamic>>(
                     context: context,
                     builder: (context) => MealUpdateModal(
-                      currentMealData:
-                          currentMeal, // Now passing a non-nullable Map
+                      currentMealData: currentMeal,
                     ),
                   );
 
                   if (result != null) {
-                    setState(() {
-                      if (meals.isEmpty) {
-                        meals.add(result);
-                      } else {
-                        meals[0] = result;
-                      }
-                    });
+                    await _updateMealPlan(result);
                   }
                 },
               ),
