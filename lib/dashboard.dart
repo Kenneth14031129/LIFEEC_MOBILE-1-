@@ -1,7 +1,11 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'bottomappbar.dart';
+import 'notification_modal.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -29,41 +33,165 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _fetchData() async {
-    await Future.delayed(const Duration(seconds: 1));
     setState(() {
-      isLoading = false;
-      totalResidents = 45;
-      totalAlerts = 128;
-      activeNurses = 12;
-      alertsResolved = 92.5;
-      notifications = List.generate(
-        5,
-        (index) => {
-          'id': index,
-          'resident': 'Resident ${index + 1}',
-          'message': index % 2 == 0
-              ? 'Emergency alert triggered'
-              : 'Vital signs need attention',
-          'type': index % 2 == 0 ? 'emergency' : 'warning',
-          'timestamp': DateTime.now().subtract(Duration(hours: index)),
-          'read': false,
-        },
-      );
-      monthlyStats = [
-        {'month': 'Jan', 'alerts': 30},
-        {'month': 'Feb', 'alerts': 45},
-        {'month': 'Mar', 'alerts': 35},
-        {'month': 'Apr', 'alerts': 25},
-        {'month': 'May', 'alerts': 40},
-        {'month': 'Jun', 'alerts': 50},
-        {'month': 'Jul', 'alerts': 38},
-        {'month': 'Aug', 'alerts': 42},
-        {'month': 'Sep', 'alerts': 48},
-        {'month': 'Oct', 'alerts': 52},
-        {'month': 'Nov', 'alerts': 45},
-        {'month': 'Dec', 'alerts': 55},
-      ];
+      isLoading = true;
     });
+
+    try {
+      // Fetch emergency alerts
+      final alertsResponse = await http.get(
+        Uri.parse('http://localhost:5001/api/emergency-alerts'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      // Fetch residents count
+      final residentsResponse = await http.get(
+        Uri.parse('http://localhost:5001/api/residents/search'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (alertsResponse.statusCode == 200 &&
+          residentsResponse.statusCode == 200) {
+        final List<dynamic> alerts = json.decode(alertsResponse.body);
+        final List<dynamic> residents = json.decode(residentsResponse.body);
+
+        // Calculate alerts statistics
+        final unreadAlerts =
+            alerts.where((alert) => !(alert['read'] ?? false)).length;
+        final totalAlertsCount = alerts.length;
+
+        // Process monthly statistics
+        final Map<String, int> monthlyAlertCounts = {};
+        final months = [
+          'Jan',
+          'Feb',
+          'Mar',
+          'Apr',
+          'May',
+          'Jun',
+          'Jul',
+          'Aug',
+          'Sep',
+          'Oct',
+          'Nov',
+          'Dec'
+        ];
+
+        // Process alerts for monthly statistics
+        for (var alert in alerts) {
+          if (alert['timestamp'] != null) {
+            final date = DateTime.tryParse(alert['timestamp']);
+            if (date != null) {
+              final monthName = months[date.month - 1];
+              monthlyAlertCounts[monthName] =
+                  (monthlyAlertCounts[monthName] ?? 0) + 1;
+            }
+          }
+        }
+
+        // Create monthly stats list with proper sorting
+        final List<Map<String, dynamic>> monthlyStatsData = months.map((month) {
+          return {
+            'month': month,
+            'alerts': monthlyAlertCounts[month] ?? 0,
+          };
+        }).toList();
+
+        // Process recent unread notifications
+        final List<Map<String, dynamic>> recentNotifications =
+            alerts.where((alert) => !alert['read']).take(5).map((alert) {
+          return {
+            'id': alert['_id'] ?? '',
+            'resident': alert['residentName'] ?? 'Unknown Resident',
+            'message': alert['message'] ?? 'Emergency alert triggered',
+            'type': 'emergency',
+            'timestamp':
+                DateTime.tryParse(alert['timestamp'] ?? '') ?? DateTime.now(),
+            'read': alert['read'] ?? false,
+            'emergencyContact': {
+              'name': alert['emergencyContact']?['name'] ?? 'Not provided',
+              'phone': alert['emergencyContact']?['phone'] ?? 'Not provided',
+              'relation':
+                  alert['emergencyContact']?['relation'] ?? 'Not specified',
+            },
+          };
+        }).toList();
+
+        // Update state with all the processed data
+        setState(() {
+          isLoading = false;
+          totalResidents = residents.length;
+          totalAlerts = totalAlertsCount; // Total alerts (both read and unread)
+          monthlyStats = monthlyStatsData;
+          notifications = recentNotifications;
+
+          // Calculate alerts resolved percentage
+          if (totalAlertsCount > 0) {
+            alertsResolved =
+                ((totalAlertsCount - unreadAlerts) / totalAlertsCount) * 100;
+          } else {
+            alertsResolved = 0.0;
+          }
+
+          activeNurses =
+              12; // This could be fetched from a separate API endpoint if available
+        });
+      } else {
+        throw Exception('Failed to fetch dashboard data');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error fetching dashboard data: $e');
+      }
+      setState(() {
+        isLoading = false;
+        // Set default values in case of error
+        totalResidents = 0;
+        totalAlerts = 0;
+        activeNurses = 0;
+        alertsResolved = 0;
+        notifications = [];
+        monthlyStats = List.generate(
+            12,
+            (index) => {
+                  'month': [
+                    'Jan',
+                    'Feb',
+                    'Mar',
+                    'Apr',
+                    'May',
+                    'Jun',
+                    'Jul',
+                    'Aug',
+                    'Sep',
+                    'Oct',
+                    'Nov',
+                    'Dec'
+                  ][index],
+                  'alerts': 0,
+                });
+      });
+
+      // Show error message to user
+      if (mounted) {
+        // Check if widget is still mounted before showing SnackBar
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Failed to load dashboard data. Please try again.',
+              style: GoogleFonts.poppins(color: Colors.white),
+            ),
+            backgroundColor: Colors.red[700],
+            duration: const Duration(seconds: 3),
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: Colors.white,
+              onPressed: _fetchData,
+            ),
+          ),
+        );
+      }
+    }
   }
 
   String _formatTimestamp(DateTime timestamp) {
@@ -147,10 +275,55 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
                 const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.notifications_outlined),
-                  color: Colors.white,
-                  onPressed: () {},
+                Stack(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.notifications_outlined),
+                      color: Colors.white,
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) => NotificationModal(
+                            onUnreadCountChanged: (count) {
+                              setState(() {
+                                // We'll refresh all data to update both the badge and stats
+                                _fetchData();
+                              });
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                    if (notifications.where((n) => !n['read']).length >
+                        0) // Show badge based on unread notifications
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.red[700],
+                            shape: BoxShape.circle,
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
+                          child: Text(
+                            notifications
+                                .where((n) => !n['read'])
+                                .length
+                                .toString(),
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(width: 8),
                 CircleAvatar(

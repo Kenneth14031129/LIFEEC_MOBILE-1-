@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'bottomappbar.dart';
+import 'notification_modal.dart';
 import 'residents_details.dart';
 
 class ResidentsList extends StatefulWidget {
@@ -20,11 +21,20 @@ class _ResidentsListState extends State<ResidentsList> {
   int _selectedIndex = 1;
   String _searchQuery = '';
   String? _error;
+  int _unreadNotifications = 0;
 
   @override
   void initState() {
     super.initState();
     _fetchResidents();
+    _fetchUnreadCount();
+  }
+
+// Add this method to update the unread count
+  void _updateUnreadCount(int count) {
+    setState(() {
+      _unreadNotifications = count;
+    });
   }
 
   Future<void> _fetchResidents() async {
@@ -154,6 +164,29 @@ class _ResidentsListState extends State<ResidentsList> {
     }
   }
 
+  // Add this method to fetch initial unread count
+  Future<void> _fetchUnreadCount() async {
+    try {
+      final response = await http.get(
+        Uri.parse('http://localhost:5001/api/emergency-alerts'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        final unreadCount =
+            data.where((alert) => !(alert['read'] ?? false)).length;
+        setState(() {
+          _unreadNotifications = unreadCount;
+        });
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error fetching unread count: $e');
+      }
+    }
+  }
+
   String _formatDate(String dateString) {
     final date = DateTime.parse(dateString);
     return '${date.year}/${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}';
@@ -250,10 +283,22 @@ class _ResidentsListState extends State<ResidentsList> {
                   ),
                 ),
                 const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.notifications_outlined),
-                  color: Colors.white,
-                  onPressed: () {},
+                Stack(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.notifications_outlined),
+                      color: Colors.white,
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) => NotificationModal(
+                            onUnreadCountChanged: _updateUnreadCount,
+                          ),
+                        );
+                      },
+                    ),
+                    NotificationBadge(count: _unreadNotifications),
+                  ],
                 ),
                 const SizedBox(width: 8),
                 CircleAvatar(

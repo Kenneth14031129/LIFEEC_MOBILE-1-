@@ -77,7 +77,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const ResidentsList(),
+      home: const DashboardScreen(),
     );
   }
 }
