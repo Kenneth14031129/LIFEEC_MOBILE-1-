@@ -9,6 +9,7 @@ const residentRoutes = require('./routes/residentRoutes');
 const healthPlanRoutes = require('./routes/healthPlanRoutes');
 const mealRecordRoutes = require('./routes/mealRecordRoutes');
 const activityRecordRoutes = require('./routes/activityRecordRoutes');
+const emergencyAlertRoutes = require('./routes/emergencyAlertRoutes');
 
 const app = express();
 
@@ -42,7 +43,7 @@ app.use('/api/residents', residentRoutes);
 app.use('/api/healthplans', healthPlanRoutes);
 app.use('/api/meals', mealRecordRoutes);
 app.use('/api/activities', activityRecordRoutes);
-
+app.use('/api/emergency-alerts', emergencyAlertRoutes);
 
 // Test Routes
 app.get('/test', (req, res) => {

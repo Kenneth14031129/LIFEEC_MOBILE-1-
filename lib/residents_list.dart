@@ -68,6 +68,8 @@ class _ResidentsListState extends State<ResidentsList> {
                     'phone': resident['contactNumber'] ?? 'No phone',
                     'emergencyContact': {
                       'name': resident['emergencyContact']['name'] ?? 'No name',
+                      'relation': resident['emergencyContact']['relation'] ??
+                          'Not specified',
                       'phone':
                           resident['emergencyContact']['phone'] ?? 'No phone',
                       'email':
@@ -88,6 +90,67 @@ class _ResidentsListState extends State<ResidentsList> {
         _error = 'Failed to load residents. Please try again. Error: $e';
         isLoading = false;
       });
+    }
+  }
+
+  // Add this function at class level in _ResidentsListState
+  // In residents_list.dart - Update the _createEmergencyAlert function:
+
+  Future<void> _createEmergencyAlert(Map<String, dynamic> resident) async {
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:5001/api/emergency-alerts'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'residentId': resident['id'],
+          'residentName': resident['name'],
+          'emergencyContact': {
+            'name': resident['emergencyContact']['name'],
+            'phone': resident['emergencyContact']['phone'],
+            'email': resident['emergencyContact']['email'],
+            'relation': resident['emergencyContact']['relation'],
+          }
+        }),
+      );
+
+      if (kDebugMode) {
+        print('Response status: ${response.statusCode}');
+        print('Response body: ${response.body}');
+      }
+
+      if (response.statusCode == 201) {
+        // Alert created successfully
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Emergency alert triggered for ${resident['name']}',
+              style: GoogleFonts.poppins(color: Colors.white),
+            ),
+            backgroundColor: Colors.red[700],
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      } else {
+        final errorData = json.decode(response.body);
+        throw Exception(
+            errorData['message'] ?? 'Failed to create emergency alert');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error creating emergency alert: $e');
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Failed to trigger emergency alert: ${e.toString()}',
+            style: GoogleFonts.poppins(color: Colors.white),
+          ),
+          backgroundColor: Colors.red[700],
+          duration: const Duration(seconds: 3),
+        ),
+      );
     }
   }
 
@@ -407,6 +470,54 @@ class _ResidentsListState extends State<ResidentsList> {
                     ],
                   ),
                 ),
+                IconButton(
+                  icon: const Icon(Icons.warning),
+                  color: Colors.red[700],
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          title: Text(
+                            'Emergency Alert',
+                            style: GoogleFonts.poppins(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red[700],
+                            ),
+                          ),
+                          content: Text(
+                            'Do you want to trigger an emergency alert for ${resident['name']}?',
+                            style: GoogleFonts.poppins(),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                              child: Text(
+                                'Cancel',
+                                style: GoogleFonts.poppins(),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                Navigator.of(context).pop();
+                                await _createEmergencyAlert(resident);
+                              },
+                              child: Text(
+                                'Trigger Alert',
+                                style: GoogleFonts.poppins(
+                                  color: Colors.red[700],
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
+                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -433,6 +544,9 @@ class _ResidentsListState extends State<ResidentsList> {
                 ),
                 const SizedBox(height: 8),
                 _buildInfoRow('Name:', resident['emergencyContact']['name']),
+                const SizedBox(height: 8),
+                _buildInfoRow(
+                    'Relation:', resident['emergencyContact']['relation']),
                 const SizedBox(height: 8),
                 _buildInfoRow('Phone:', resident['emergencyContact']['phone']),
                 const SizedBox(height: 8),

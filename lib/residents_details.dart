@@ -75,9 +75,10 @@ class _ResidentDetailsState extends State<ResidentDetails> {
             'location': data['address'] ?? 'No address',
             'gender': data['gender'] ?? 'Not specified',
             'phone': data['contactNumber'] ?? 'No phone',
-            'email': 'No email',
             'emergencyContact': {
               'name': data['emergencyContact']['name'] ?? 'No name',
+              'relation':
+                  data['emergencyContact']['relation'] ?? 'Not specified',
               'phone': data['emergencyContact']['phone'] ?? 'No phone',
               'email': data['emergencyContact']['email'] ?? 'No email',
             },
@@ -704,7 +705,6 @@ class _ResidentDetailsState extends State<ResidentDetails> {
         _buildInfoRow('DOB:', residentData['dateOfBirth'] ?? 'Not specified'),
         _buildInfoRow('Gender:', residentData['gender'] ?? 'Not specified'),
         _buildInfoRow('Phone:', residentData['phone'] ?? 'Not specified'),
-        _buildInfoRow('Email:', residentData['email'] ?? 'Not specified'),
         const SizedBox(height: 16),
         const Divider(),
         const SizedBox(height: 16),
@@ -719,6 +719,10 @@ class _ResidentDetailsState extends State<ResidentDetails> {
         _buildInfoRow(
           'Name:',
           residentData['emergencyContact']?['name'] ?? 'Not specified',
+        ),
+        _buildInfoRow(
+          'Relation:',
+          residentData['emergencyContact']?['relation'] ?? 'Not specified',
         ),
         _buildInfoRow(
           'Phone:',
