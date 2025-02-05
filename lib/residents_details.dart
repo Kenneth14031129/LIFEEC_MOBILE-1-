@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'HealthUpdateModal.dart';
 import 'activity_update_modal.dart';
 import 'health_history_view.dart';
+import 'meal_history_view.dart';
 import 'meal_update_modal.dart';
 
 class ResidentDetails extends StatefulWidget {
@@ -890,7 +891,14 @@ class _ResidentDetailsState extends State<ResidentDetails> {
               child: _buildGradientButton(
                 'View Meal History',
                 () {
-                  // Add your view meal history logic here
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => MealHistoryView(
+                        residentId: widget.residentId,
+                      ),
+                    ),
+                  );
                 },
               ),
             ),
