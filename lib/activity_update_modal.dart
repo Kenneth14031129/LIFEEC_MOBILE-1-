@@ -19,6 +19,7 @@ class _ActivityUpdateModalState extends State<ActivityUpdateModal> {
   late TextEditingController _durationController;
   late TextEditingController _descriptionController;
   late TextEditingController _notesController;
+  String _selectedStatus = 'Scheduled';
 
   @override
   void initState() {
@@ -38,6 +39,7 @@ class _ActivityUpdateModalState extends State<ActivityUpdateModal> {
     _notesController = TextEditingController(
       text: widget.currentActivityData['notes'] ?? '',
     );
+    _selectedStatus = widget.currentActivityData['status'] ?? 'Scheduled';
   }
 
   @override
@@ -120,6 +122,8 @@ class _ActivityUpdateModalState extends State<ActivityUpdateModal> {
                   _activityNameController,
                 ),
                 const SizedBox(height: 16),
+                _buildStatusDropdown(), // Add this line
+                const SizedBox(height: 16),
                 _buildTextField(
                   'Location',
                   'Enter location',
@@ -137,6 +141,69 @@ class _ActivityUpdateModalState extends State<ActivityUpdateModal> {
         ),
       ],
     );
+  }
+
+  Widget _buildStatusDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Status',
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            color: Colors.grey[700],
+          ),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey[300]!),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _selectedStatus,
+              isExpanded: true,
+              items: ['Scheduled', 'In Progress', 'Completed', 'Cancelled']
+                  .map((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(
+                    value,
+                    style: GoogleFonts.poppins(
+                      color: _getStatusColor(value),
+                    ),
+                  ),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
+                if (newValue != null) {
+                  setState(() {
+                    _selectedStatus = newValue;
+                  });
+                }
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'Scheduled':
+        return Colors.blue[700]!;
+      case 'In Progress':
+        return Colors.orange[700]!;
+      case 'Completed':
+        return Colors.green[700]!;
+      case 'Cancelled':
+        return Colors.red[700]!;
+      default:
+        return Colors.grey[700]!;
+    }
   }
 
   Widget _buildActivityDescription() {
@@ -274,7 +341,8 @@ class _ActivityUpdateModalState extends State<ActivityUpdateModal> {
                   'duration': _durationController.text,
                   'description': _descriptionController.text,
                   'notes': _notesController.text,
-                  'completed': false,
+                  'status': _selectedStatus, // Add this line
+                  'completed': _selectedStatus == 'Completed',
                 };
                 Navigator.pop(context, updatedActivityData);
               },

@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 import 'HealthUpdateModal.dart';
+import 'activity_history_view.dart';
 import 'activity_update_modal.dart';
 import 'health_history_view.dart';
 import 'meal_history_view.dart';
@@ -232,30 +233,36 @@ class _ResidentDetailsState extends State<ResidentDetails> {
 // Update the _fetchMealData method
   Future<void> _fetchMealData() async {
     try {
+      // Change the endpoint to get the latest meal record
       final response = await http.get(
         Uri.parse(
-            'http://localhost:5001/api/meals/resident/${widget.residentId}'),
+            'http://localhost:5001/api/meals/resident/${widget.residentId}/latest'),
         headers: {'Content-Type': 'application/json'},
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
+        final meal =
+            json.decode(response.body); // Now it's a single object, not a list
         setState(() {
-          meals = data
-              .map((meal) => {
-                    'id': meal['_id'],
-                    'date': meal['date'] ?? 'Not specified',
-                    'breakfast': meal['breakfast'] ?? 'Not specified',
-                    'lunch': meal['lunch'] ?? 'Not specified',
-                    'snacks': meal['snacks'] ?? 'Not specified',
-                    'dinner': meal['dinner'] ?? 'Not specified',
-                    'dietary needs': meal['dietaryNeeds'] ?? 'None specified',
-                    'nutritional goals':
-                        meal['nutritionalGoals'] ?? 'None specified',
-                    'completed':
-                        false // You might want to add this field to your backend
-                  })
-              .toList();
+          meals = [
+            // Wrap single meal in a list since UI expects a list
+            {
+              'id': meal['_id'],
+              'date': meal['date'] ?? 'Not specified',
+              'breakfast': meal['breakfast'] ?? 'Not specified',
+              'lunch': meal['lunch'] ?? 'Not specified',
+              'snacks': meal['snacks'] ?? 'Not specified',
+              'dinner': meal['dinner'] ?? 'Not specified',
+              'dietary needs': meal['dietaryNeeds'] ?? 'None specified',
+              'nutritional goals': meal['nutritionalGoals'] ?? 'None specified',
+              'completed': false
+            }
+          ];
+        });
+      } else if (response.statusCode == 404) {
+        // Handle case when no meals exist
+        setState(() {
+          meals = [];
         });
       } else {
         throw Exception('Failed to load meal data');
@@ -322,30 +329,37 @@ class _ResidentDetailsState extends State<ResidentDetails> {
 // Update the _fetchActivityData method
   Future<void> _fetchActivityData() async {
     try {
+      // Change the endpoint to get the latest activity record
       final response = await http.get(
         Uri.parse(
-            'http://localhost:5001/api/activities/resident/${widget.residentId}'),
+            'http://localhost:5001/api/activities/resident/${widget.residentId}/latest'),
         headers: {'Content-Type': 'application/json'},
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
+        final activity =
+            json.decode(response.body); // Now it's a single object, not a list
         setState(() {
-          activities = data
-              .map((activity) => {
-                    'id': activity['_id'],
-                    'activity name': activity['name'],
-                    'date': activity['date'] ?? 'Not specified',
-                    'description':
-                        activity['description'] ?? 'No description available',
-                    'status': activity['status'] ?? 'Not Started',
-                    'duration':
-                        activity['duration']?.toString() ?? 'Not specified',
-                    'location': activity['location'] ?? 'Not specified',
-                    'notes': activity['notes'] ?? '',
-                    'completed': activity['status'] == 'Completed'
-                  })
-              .toList();
+          activities = [
+            // Wrap single activity in a list since UI expects a list
+            {
+              'id': activity['_id'],
+              'activity name': activity['name'],
+              'date': activity['date'] ?? 'Not specified',
+              'description':
+                  activity['description'] ?? 'No description available',
+              'status':
+                  activity['status'] ?? 'Scheduled', // Default to Scheduled
+              'duration': activity['duration']?.toString() ?? 'Not specified',
+              'location': activity['location'] ?? 'Not specified',
+              'notes': activity['notes'] ?? '',
+            }
+          ];
+        });
+      } else if (response.statusCode == 404) {
+        // Handle case when no activities exist
+        setState(() {
+          activities = [];
         });
       } else {
         throw Exception('Failed to load activity data');
@@ -357,6 +371,57 @@ class _ResidentDetailsState extends State<ResidentDetails> {
       setState(() {
         activities = [];
       });
+    }
+  }
+
+  Future<void> _updateActivityPlan(Map<String, dynamic> updatedData) async {
+    try {
+      if (activities.isEmpty || activities[0]['id'] == null) {
+        throw Exception('No activity record ID found to update');
+      }
+
+      final response = await http.put(
+        Uri.parse(
+            'http://localhost:5001/api/activities/${activities[0]['id']}'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'name': updatedData['activity name'],
+          'date': updatedData['date'],
+          'description': updatedData['description'],
+          'status': updatedData['status'], // Default status for update
+          'duration': int.tryParse(updatedData['duration'].toString()) ?? 0,
+          'location': updatedData['location'],
+          'notes': updatedData['notes']
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Activity plan updated successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          // Refresh the activity data
+          await _fetchActivityData();
+        }
+      } else {
+        throw Exception(
+            'Failed to update activity plan: ${response.statusCode}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error updating activity plan: $e');
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update activity plan: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -1035,13 +1100,7 @@ class _ResidentDetailsState extends State<ResidentDetails> {
                   );
 
                   if (result != null) {
-                    setState(() {
-                      if (activities.isEmpty) {
-                        activities.add(result);
-                      } else {
-                        activities[0] = result;
-                      }
-                    });
+                    await _updateActivityPlan(result);
                   }
                 },
               ),
@@ -1051,7 +1110,14 @@ class _ResidentDetailsState extends State<ResidentDetails> {
               child: _buildGradientButton(
                 'View Activity History',
                 () {
-                  // Add your view activity history logic here
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ActivityHistoryView(
+                        residentId: widget.residentId,
+                      ),
+                    ),
+                  );
                 },
               ),
             ),
@@ -1109,7 +1175,7 @@ class _ResidentDetailsState extends State<ResidentDetails> {
                     ],
                   ),
                 ),
-                _buildStatusChip(activity['completed'] ?? false),
+                _buildStatusChip(activity['status']),
               ],
             ),
             const SizedBox(height: 16),
@@ -1157,20 +1223,73 @@ class _ResidentDetailsState extends State<ResidentDetails> {
     );
   }
 
-  Widget _buildStatusChip(bool completed) {
+  Widget _buildStatusChip(dynamic status) {
+    // If status is a boolean, handle the old way
+    if (status is bool) {
+      return Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 4,
+        ),
+        decoration: BoxDecoration(
+          color: status ? Colors.green[50] : Colors.orange[50],
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          status ? 'Completed' : 'Scheduled',
+          style: GoogleFonts.poppins(
+            color: status ? Colors.green[700] : Colors.orange[700],
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      );
+    }
+
+    // Handle status string
+    Color getStatusColor(String statusValue) {
+      switch (statusValue) {
+        case 'Completed':
+          return Colors.green[700]!;
+        case 'In Progress':
+          return Colors.orange[700]!;
+        case 'Cancelled':
+          return Colors.red[700]!;
+        case 'Scheduled':
+        default:
+          return Colors.blue[700]!;
+      }
+    }
+
+    Color getStatusBgColor(String statusValue) {
+      switch (statusValue) {
+        case 'Completed':
+          return Colors.green[50]!;
+        case 'In Progress':
+          return Colors.orange[50]!;
+        case 'Cancelled':
+          return Colors.red[50]!;
+        case 'Scheduled':
+        default:
+          return Colors.blue[50]!;
+      }
+    }
+
+    String statusValue = (status as String?) ?? 'Scheduled';
+
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: 12,
         vertical: 4,
       ),
       decoration: BoxDecoration(
-        color: completed ? Colors.green[50] : Colors.orange[50],
+        color: getStatusBgColor(statusValue),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        completed ? 'Completed' : 'Scheduled',
+        statusValue,
         style: GoogleFonts.poppins(
-          color: completed ? Colors.green[700] : Colors.orange[700],
+          color: getStatusColor(statusValue),
           fontSize: 12,
           fontWeight: FontWeight.w500,
         ),

@@ -21,7 +21,7 @@ const activityRecordSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['Not Started', 'In Progress', 'Completed'],
+    enum: ['Scheduled', 'In Progress', 'Completed', 'Cancelled'],
     default: 'Not Started'
   },
   duration: {
