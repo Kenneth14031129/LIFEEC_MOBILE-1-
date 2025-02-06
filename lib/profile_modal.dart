@@ -1,7 +1,13 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'change_password_modal.dart';
+import 'edit_profile_modal.dart';
+import 'login_page.dart';
 
 class ProfileModal extends StatefulWidget {
   final VoidCallback onLogout;
@@ -26,6 +32,34 @@ class _ProfileModalState extends State<ProfileModal> {
   void initState() {
     super.initState();
     _fetchUserProfile();
+  }
+
+  void _handleLogout(BuildContext context) async {
+    try {
+      // Close the current dialog
+      Navigator.of(context).pop();
+
+      // Clear SharedPreferences (remove stored user data)
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+
+      // Navigate to login page, replacing all previous routes
+      Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+        (Route<dynamic> route) => false,
+      );
+    } catch (e) {
+      // Handle any potential errors during logout
+      if (kDebugMode) {
+        print('Logout error: $e');
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Logout failed. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Future<void> _fetchUserProfile() async {
@@ -151,7 +185,7 @@ class _ProfileModalState extends State<ProfileModal> {
         ),
         const SizedBox(height: 16),
         Text(
-          userData?['fullName'] ?? 'User Name',
+          '${userData?['fullName'] ?? 'User Name'} ($formattedUserType)',
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.w600,
@@ -165,10 +199,10 @@ class _ProfileModalState extends State<ProfileModal> {
           ),
         ),
         Text(
-          formattedUserType,
+          userData?['phone'] ?? 'No phone number',
           style: GoogleFonts.poppins(
-            fontSize: 14,
-            color: Colors.grey[500],
+            fontSize: 16,
+            color: Colors.grey[600],
           ),
         ),
         const SizedBox(height: 24),
@@ -176,14 +210,27 @@ class _ProfileModalState extends State<ProfileModal> {
           icon: Icons.person_outline,
           title: 'Edit Profile',
           onTap: () {
-            // Add edit profile functionality
+            showDialog(
+              context: context,
+              builder: (context) => EditProfileModal(
+                userData: userData!,
+                onProfileUpdate: () {
+                  _fetchUserProfile();
+                },
+              ),
+            );
           },
         ),
         _buildSettingsItem(
           icon: Icons.lock_outline,
           title: 'Change Password',
           onTap: () {
-            // Add change password functionality
+            showDialog(
+              context: context,
+              builder: (context) => ChangePasswordModal(
+                userId: widget.userId,
+              ),
+            );
           },
         ),
         const Divider(height: 32),
@@ -192,10 +239,9 @@ class _ProfileModalState extends State<ProfileModal> {
           title: 'Logout',
           color: Colors.red[700],
           onTap: () {
-            Navigator.pop(context);
             showDialog(
               context: context,
-              builder: (context) => AlertDialog(
+              builder: (dialogContext) => AlertDialog(
                 title: Text(
                   'Confirm Logout',
                   style: GoogleFonts.poppins(
@@ -208,22 +254,14 @@ class _ProfileModalState extends State<ProfileModal> {
                 ),
                 actions: [
                   TextButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () => Navigator.pop(dialogContext),
                     child: Text(
                       'Cancel',
                       style: GoogleFonts.poppins(),
                     ),
                   ),
                   TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      widget.onLogout();
-                      Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        '/login',
-                        (route) => false,
-                      );
-                    },
+                    onPressed: () => _handleLogout(context),
                     child: Text(
                       'Logout',
                       style: GoogleFonts.poppins(

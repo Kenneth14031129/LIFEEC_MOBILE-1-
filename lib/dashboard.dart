@@ -380,10 +380,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               final prefs =
                                   await SharedPreferences.getInstance();
                               await prefs.clear();
-                              if (mounted) {
-                                Navigator.of(context)
-                                    .pushReplacementNamed('/login');
-                              }
                             },
                           ),
                         );

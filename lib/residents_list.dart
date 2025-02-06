@@ -3,9 +3,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'bottomappbar.dart';
 import 'notification_modal.dart';
+import 'profile_modal.dart';
 import 'residents_details.dart';
 
 class ResidentsList extends StatefulWidget {
@@ -22,12 +24,48 @@ class _ResidentsListState extends State<ResidentsList> {
   String _searchQuery = '';
   String? _error;
   int _unreadNotifications = 0;
+  String? userId;
+  String userInitial = 'N';
 
   @override
   void initState() {
     super.initState();
+    _loadUserId();
     _fetchResidents();
     _fetchUnreadCount();
+  }
+
+  Future<void> _loadUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      userId = prefs.getString('userId');
+    });
+    if (userId != null) {
+      _loadUserData();
+    }
+  }
+
+  Future<void> _loadUserData() async {
+    if (userId != null) {
+      try {
+        final response = await http.get(
+          Uri.parse('http://localhost:5001/api/users/profile/$userId'),
+          headers: {'Content-Type': 'application/json'},
+        );
+
+        if (response.statusCode == 200) {
+          final userData = json.decode(response.body);
+          setState(() {
+            userInitial =
+                userData['fullName']?.substring(0, 1).toUpperCase() ?? 'N';
+          });
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('Error loading user data: $e');
+        }
+      }
+    }
   }
 
 // Add this method to update the unread count
@@ -304,11 +342,28 @@ class _ResidentsListState extends State<ResidentsList> {
                 CircleAvatar(
                   radius: 18,
                   backgroundColor: Colors.white.withOpacity(0.2),
-                  child: Text(
-                    'N',
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
+                  child: InkWell(
+                    onTap: () {
+                      if (userId != null) {
+                        showDialog(
+                          context: context,
+                          builder: (context) => ProfileModal(
+                            userId: userId!,
+                            onLogout: () async {
+                              final prefs =
+                                  await SharedPreferences.getInstance();
+                              await prefs.clear();
+                            },
+                          ),
+                        );
+                      }
+                    },
+                    child: Text(
+                      userInitial,
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
