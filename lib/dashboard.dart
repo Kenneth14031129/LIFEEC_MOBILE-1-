@@ -350,8 +350,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   backgroundColor: Colors.white.withOpacity(0.2),
                   child: InkWell(
                     onTap: () {
-                      print(
-                          'Avatar tapped, userId: $userId'); // Add this debug print
+                      if (kDebugMode) {
+                        print('Avatar tapped, userId: $userId');
+                      } // Add this debug print
                       if (userId != null) {
                         showDialog(
                           context: context,
