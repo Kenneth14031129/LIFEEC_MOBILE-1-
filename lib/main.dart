@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lifeec_mobile/contact_list_screen.dart';
 import 'login_page.dart';
 
 void main() {
@@ -75,7 +76,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const LoginPage(),
+      home: ContactsListScreen(),
     );
   }
 }

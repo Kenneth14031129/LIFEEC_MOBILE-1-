@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lifeec_mobile/contact_list_screen.dart';
 import 'dashboard.dart';
 import 'residents_list.dart';
 
@@ -32,7 +33,10 @@ class CustomBottomBar extends StatelessWidget {
           );
           break;
         case 2:
-          // Messages screen - to be implemented
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => ContactsListScreen()),
+          );
           break;
       }
     }
