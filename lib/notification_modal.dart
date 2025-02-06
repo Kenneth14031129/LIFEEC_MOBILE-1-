@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -60,11 +62,39 @@ class _NotificationModalState extends State<NotificationModal> {
   bool isLoading = true;
   List<Map<String, dynamic>> alerts = [];
   String? error;
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
     _fetchAlerts();
+
+    _refreshTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      _filterAlertsOlderThan24Hours();
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  // Filter alerts older than 24 hours from the UI only
+  void _filterAlertsOlderThan24Hours() {
+    final now = DateTime.now();
+    setState(() {
+      alerts = alerts.where((alert) {
+        final alertTime = alert['timestamp'] as DateTime;
+        final difference = now.difference(alertTime);
+        return difference.inHours < 24;
+      }).toList();
+
+      // Update unread count
+      final unreadCount =
+          alerts.where((alert) => !(alert['read'] as bool)).length;
+      widget.onUnreadCountChanged(unreadCount);
+    });
   }
 
   Future<void> _fetchAlerts() async {
@@ -81,28 +111,39 @@ class _NotificationModalState extends State<NotificationModal> {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
+        final now = DateTime.now();
+
+        // Process all alerts from the database
+        List<Map<String, dynamic>> allAlerts = data
+            .map((alert) => {
+                  'id': alert['_id'] ?? '',
+                  'residentName': alert['residentName'] ?? 'Unknown Resident',
+                  'message': alert['message'] ?? 'Emergency alert triggered',
+                  'timestamp':
+                      DateTime.tryParse(alert['timestamp'] ?? '') ?? now,
+                  'read': alert['read'] ?? false,
+                  'emergencyContact': {
+                    'name':
+                        alert['emergencyContact']?['name'] ?? 'Not provided',
+                    'phone':
+                        alert['emergencyContact']?['phone'] ?? 'Not provided',
+                    'relation': alert['emergencyContact']?['relation'] ??
+                        'Not specified',
+                  },
+                })
+            .toList();
+
         setState(() {
-          alerts = data
-              .map((alert) => {
-                    'id': alert['_id'] ?? '',
-                    'residentName': alert['residentName'] ?? 'Unknown Resident',
-                    'message': alert['message'] ?? 'Emergency alert triggered',
-                    'timestamp': DateTime.tryParse(alert['timestamp'] ?? '') ??
-                        DateTime.now(),
-                    'read': alert['read'] ?? false,
-                    'emergencyContact': {
-                      'name':
-                          alert['emergencyContact']?['name'] ?? 'Not provided',
-                      'phone':
-                          alert['emergencyContact']?['phone'] ?? 'Not provided',
-                      'relation': alert['emergencyContact']?['relation'] ??
-                          'Not specified',
-                    },
-                  })
-              .toList();
+          // Only show alerts less than 24 hours old in the UI
+          alerts = allAlerts.where((alert) {
+            final alertTime = alert['timestamp'] as DateTime;
+            final difference = now.difference(alertTime);
+            return difference.inHours < 24;
+          }).toList();
+
           isLoading = false;
 
-          // Update unread count
+          // Update unread count for visible alerts only
           final unreadCount =
               alerts.where((alert) => !(alert['read'] as bool)).length;
           widget.onUnreadCountChanged(unreadCount);
@@ -269,6 +310,9 @@ class _NotificationModalState extends State<NotificationModal> {
 
   Widget _buildAlertCard(Map<String, dynamic> alert) {
     final bool isRead = alert['read'] as bool? ?? false;
+    final DateTime timestamp = alert['timestamp'] as DateTime;
+    final Duration timeLeft =
+        timestamp.add(const Duration(hours: 24)).difference(DateTime.now());
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -349,28 +393,48 @@ class _NotificationModalState extends State<NotificationModal> {
               ),
               const SizedBox(height: 8),
               _buildContactInfo(
-                  'Name',
-                  (alert['emergencyContact'] as Map<String, dynamic>)['name']
-                          as String? ??
-                      'Not provided'),
+                'Name',
+                (alert['emergencyContact'] as Map<String, dynamic>)['name']
+                        as String? ??
+                    'Not provided',
+              ),
               _buildContactInfo(
-                  'Relation',
-                  (alert['emergencyContact']
-                          as Map<String, dynamic>)['relation'] as String? ??
-                      'Not specified'),
+                'Relation',
+                (alert['emergencyContact'] as Map<String, dynamic>)['relation']
+                        as String? ??
+                    'Not specified',
+              ),
               _buildContactInfo(
-                  'Phone',
-                  (alert['emergencyContact'] as Map<String, dynamic>)['phone']
-                          as String? ??
-                      'Not provided'),
+                'Phone',
+                (alert['emergencyContact'] as Map<String, dynamic>)['phone']
+                        as String? ??
+                    'Not provided',
+              ),
               const SizedBox(height: 12),
-              Text(
-                timeago
-                    .format(alert['timestamp'] as DateTime? ?? DateTime.now()),
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: Colors.grey[500],
-                ),
+              const Divider(),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    timeago.format(timestamp),
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                  Text(
+                    'Expires in: ${timeLeft.inHours}h ${timeLeft.inMinutes.remainder(60)}m',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color:
+                          timeLeft.inHours < 1 ? Colors.red : Colors.grey[500],
+                      fontWeight: timeLeft.inHours < 1
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
