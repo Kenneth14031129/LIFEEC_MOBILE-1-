@@ -273,6 +273,22 @@ class _ResidentHistoryModalState extends State<ResidentHistoryModal> {
                   onChanged: (value) => setState(() => _sortBy = value!),
                 ),
               ),
+              const SizedBox(width: 8),
+              // Sort direction icon
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey[300]!),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: IconButton(
+                  icon: Icon(
+                    _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                    size: 20,
+                  ),
+                  onPressed: () =>
+                      setState(() => _sortAscending = !_sortAscending),
+                ),
+              ),
             ],
           ),
         ],
