@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'alert_history_modal.dart';
 import 'bottomappbar.dart';
 import 'notification_modal.dart';
+import 'resident_history_modal.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -439,7 +440,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
       List<Color> gradientColors) {
     return GestureDetector(
       onTap: () {
-        if (title == 'Total Alerts') {
+        if (title == 'Total Residents') {
+          showDialog(
+            context: context,
+            builder: (context) => const ResidentHistoryModal(),
+          );
+        } else if (title == 'Total Alerts') {
           showDialog(
             context: context,
             builder: (context) => const AlertHistoryModal(),
