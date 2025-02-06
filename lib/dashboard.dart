@@ -30,6 +30,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedTimeRange = 30;
   int _selectedIndex = 0;
   String? userId;
+  String userInitial = 'N';
 
   @override
   void initState() {
@@ -38,16 +39,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _fetchData();
   }
 
+  Future<void> _loadUserData() async {
+    if (userId != null) {
+      try {
+        final response = await http.get(
+          Uri.parse('http://localhost:5001/api/users/profile/$userId'),
+          headers: {'Content-Type': 'application/json'},
+        );
+
+        if (response.statusCode == 200) {
+          final userData = json.decode(response.body);
+          setState(() {
+            userInitial =
+                userData['fullName']?.substring(0, 1).toUpperCase() ?? 'N';
+          });
+        }
+      } catch (e) {
+        print('Error loading user data: $e');
+      }
+    }
+  }
+
   // In _loadUserId method in DashboardScreen:
   Future<void> _loadUserId() async {
     final prefs = await SharedPreferences.getInstance();
-    final id = prefs.getString('userId');
-    if (kDebugMode) {
-      print('Loaded userId: $id');
-    } // Add this debug print
     setState(() {
-      userId = id;
+      userId = prefs.getString('userId');
     });
+    if (userId != null) {
+      _loadUserData(); // Add this line
+    }
   }
 
   Future<void> _fetchData() async {
@@ -350,9 +371,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   backgroundColor: Colors.white.withOpacity(0.2),
                   child: InkWell(
                     onTap: () {
-                      if (kDebugMode) {
-                        print('Avatar tapped, userId: $userId');
-                      } // Add this debug print
                       if (userId != null) {
                         showDialog(
                           context: context,
@@ -369,21 +387,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             },
                           ),
                         );
-                      } else {
-                        // Add this else block to show feedback when userId is null
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'User ID not found. Please login again.',
-                              style: GoogleFonts.poppins(color: Colors.white),
-                            ),
-                            backgroundColor: Colors.red[700],
-                          ),
-                        );
                       }
                     },
                     child: Text(
-                      'N',
+                      userInitial, // Use the userInitial here instead of 'N'
                       style: GoogleFonts.poppins(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
