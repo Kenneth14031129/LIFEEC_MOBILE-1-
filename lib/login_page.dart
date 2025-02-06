@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dashboard.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -132,6 +134,13 @@ class LoginPageState extends State<LoginPage>
         if (!['nurse', 'nutritionist', 'relative'].contains(userType)) {
           throw 'Invalid user type. Access denied.';
         }
+
+        // Save user ID to SharedPreferences - Add this block
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('userId', response['user']['id']); // Save user ID
+        if (kDebugMode) {
+          print('Saved userId: ${response['user']['id']}');
+        } // Debug print
       } else {
         // Handle registration
         if (!['nurse', 'nutritionist', 'relative']

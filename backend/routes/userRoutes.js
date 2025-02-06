@@ -6,7 +6,7 @@ const userController = require('../controllers/userController');
 // All routes are now public
 router.post('/register', userController.registerUser);
 router.post('/login', userController.loginUser);
-router.get('/profile', userController.getUserProfile);
+router.get('/profile/:userId', userController.getUserProfile);
 router.put('/update', userController.updateUser);
 router.delete('/delete', userController.deleteUser);
 

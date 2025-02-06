@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'alert_history_modal.dart';
 import 'bottomappbar.dart';
 import 'notification_modal.dart';
@@ -28,11 +29,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool showNotifications = false;
   int _selectedTimeRange = 30;
   int _selectedIndex = 0;
+  String? userId;
 
   @override
   void initState() {
     super.initState();
+    _loadUserId();
     _fetchData();
+  }
+
+  // In _loadUserId method in DashboardScreen:
+  Future<void> _loadUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    final id = prefs.getString('userId');
+    if (kDebugMode) {
+      print('Loaded userId: $id');
+    } // Add this debug print
+    setState(() {
+      userId = id;
+    });
   }
 
   Future<void> _fetchData() async {
@@ -335,16 +350,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   backgroundColor: Colors.white.withOpacity(0.2),
                   child: InkWell(
                     onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => ProfileModal(
-                          onLogout: () {
-                            // Add your logout logic here
-                            // For example, navigate to login screen:
-                            // Navigator.of(context).pushReplacementNamed('/login');
-                          },
-                        ),
-                      );
+                      print(
+                          'Avatar tapped, userId: $userId'); // Add this debug print
+                      if (userId != null) {
+                        showDialog(
+                          context: context,
+                          builder: (context) => ProfileModal(
+                            userId: userId!,
+                            onLogout: () async {
+                              final prefs =
+                                  await SharedPreferences.getInstance();
+                              await prefs.clear();
+                              if (mounted) {
+                                Navigator.of(context)
+                                    .pushReplacementNamed('/login');
+                              }
+                            },
+                          ),
+                        );
+                      } else {
+                        // Add this else block to show feedback when userId is null
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'User ID not found. Please login again.',
+                              style: GoogleFonts.poppins(color: Colors.white),
+                            ),
+                            backgroundColor: Colors.red[700],
+                          ),
+                        );
+                      }
                     },
                     child: Text(
                       'N',
