@@ -8,6 +8,14 @@ exports.registerUser = async (req, res) => {
   try {
     const { fullName, email, password, phone, userType } = req.body;
 
+    // Validate user type
+    const validUserTypes = ['nurse', 'nutritionist', 'relative'];
+    if (!validUserTypes.includes(userType)) {
+      return res.status(400).json({ 
+        message: 'Invalid user type. Must be nurse, nutritionist, or relative' 
+      });
+    }
+
     // Check if user exists
     let user = await User.findOne({ email });
     if (user) {
@@ -29,15 +37,7 @@ exports.registerUser = async (req, res) => {
 
     await user.save();
 
-    // Create JWT token
-    const token = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
-    );
-
     res.status(201).json({
-      token,
       user: {
         id: user._id,
         fullName: user.fullName,
@@ -62,21 +62,21 @@ exports.loginUser = async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
+    // Validate user type
+    const validUserTypes = ['nurse', 'nutritionist', 'relative'];
+    if (!validUserTypes.includes(user.userType)) {
+      return res.status(400).json({ 
+        message: 'Invalid user type. Please contact administrator' 
+      });
+    }
+
     // Validate password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Create JWT token
-    const token = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
-    );
-
     res.json({
-      token,
       user: {
         id: user._id,
         fullName: user.fullName,
@@ -93,7 +93,8 @@ exports.loginUser = async (req, res) => {
 // Get user profile
 exports.getUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');
+    const { userId } = req.params;
+    const user = await User.findById(userId).select('-password');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -107,9 +108,11 @@ exports.getUserProfile = async (req, res) => {
 // Update user profile
 exports.updateUser = async (req, res) => {
   try {
+    const { userId } = req.params;
     const { fullName, phone, email } = req.body;
+    
     const updatedUser = await User.findByIdAndUpdate(
-      req.user.id,
+      userId,
       { 
         fullName, 
         phone, 
@@ -117,6 +120,10 @@ exports.updateUser = async (req, res) => {
       },
       { new: true }
     ).select('-password');
+    
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
     
     res.json(updatedUser);
   } catch (error) {
@@ -128,7 +135,13 @@ exports.updateUser = async (req, res) => {
 // Delete user
 exports.deleteUser = async (req, res) => {
   try {
-    await User.findByIdAndDelete(req.user.id);
+    const { userId } = req.params;
+    const deletedUser = await User.findByIdAndDelete(userId);
+    
+    if (!deletedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
     console.error('Delete user error:', error);

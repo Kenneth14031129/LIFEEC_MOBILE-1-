@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'alert_history_modal.dart';
 import 'bottomappbar.dart';
 import 'notification_modal.dart';
+import 'profile_modal.dart';
 import 'resident_history_modal.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -296,8 +297,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         );
                       },
                     ),
-                    if (notifications.where((n) => !n['read']).length >
-                        0) // Show badge based on unread notifications
+                    if (notifications
+                        .where((n) => !n['read'])
+                        .isNotEmpty) // Show badge based on unread notifications
                       Positioned(
                         right: 0,
                         top: 0,
@@ -331,11 +333,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 CircleAvatar(
                   radius: 18,
                   backgroundColor: Colors.white.withOpacity(0.2),
-                  child: Text(
-                    'N',
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
+                  child: InkWell(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => ProfileModal(
+                          onLogout: () {
+                            // Add your logout logic here
+                            // For example, navigate to login screen:
+                            // Navigator.of(context).pushReplacementNamed('/login');
+                          },
+                        ),
+                      );
+                    },
+                    child: Text(
+                      'N',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),

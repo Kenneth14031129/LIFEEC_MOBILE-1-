@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dashboard.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -72,6 +74,39 @@ class LoginPageState extends State<LoginPage>
     });
   }
 
+// Add this function outside the class to handle the API response
+  Future<Map<String, dynamic>> loginUser(String email, String password) async {
+    final response = await http.post(
+      Uri.parse('http://localhost:5001/api/users/login'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'email': email,
+        'password': password,
+      }),
+    );
+
+    return json.decode(response.body);
+  }
+
+// Add this function outside the class to handle registration
+  Future<Map<String, dynamic>> registerUser(String fullName, String email,
+      String password, String phone, String userType) async {
+    final response = await http.post(
+      Uri.parse('http://localhost:5001/api/users/register'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'fullName': fullName,
+        'email': email,
+        'password': password,
+        'phone': phone,
+        'userType': userType,
+      }),
+    );
+
+    return json.decode(response.body);
+  }
+
+// Replace the existing _handleSubmit with this version
   Future<void> _handleSubmit() async {
     if (!_validateForm()) return;
 
@@ -81,11 +116,44 @@ class LoginPageState extends State<LoginPage>
     });
 
     try {
-      // Simulating a network delay
-      await Future.delayed(const Duration(seconds: 1));
+      Map<String, dynamic> response;
+
+      if (isLogin) {
+        // Handle login
+        response =
+            await loginUser(_emailController.text, _passwordController.text);
+
+        if (response.containsKey('error') || response.containsKey('message')) {
+          throw response['error'] ?? response['message'];
+        }
+
+        // Check if user type is valid
+        final userType = response['user']['userType'];
+        if (!['nurse', 'nutritionist', 'relative'].contains(userType)) {
+          throw 'Invalid user type. Access denied.';
+        }
+      } else {
+        // Handle registration
+        if (!['nurse', 'nutritionist', 'relative']
+            .contains(_selectedUserType)) {
+          throw 'Invalid user type. Only nurses, nutritionists, and relatives can register.';
+        }
+
+        response = await registerUser(
+          _fullNameController.text,
+          _emailController.text,
+          _passwordController.text,
+          _phoneController.text,
+          _selectedUserType!,
+        );
+
+        if (response.containsKey('error') || response.containsKey('message')) {
+          throw response['error'] ?? response['message'];
+        }
+      }
 
       if (mounted) {
-        // Simply navigate to dashboard after form validation
+        // Successfully logged in or registered
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const DashboardScreen()),
@@ -96,9 +164,11 @@ class LoginPageState extends State<LoginPage>
         _errorMessage = error.toString();
       });
     } finally {
-      setState(() {
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
