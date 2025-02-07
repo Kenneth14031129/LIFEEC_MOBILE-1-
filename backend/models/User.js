@@ -8,7 +8,7 @@ const userSchema = new mongoose.Schema({
   phone: String,
   userType: {
     type: String,
-    enum: ['nurse', 'nutritionist', 'relative'],
+    enum: ['admin','nurse', 'nutritionist', 'relative'],
     required: true
   },
   createdAt: { type: Date, default: Date.now }

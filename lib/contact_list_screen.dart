@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 import 'bottomappbar.dart';
 import 'messages_page.dart';
@@ -11,6 +13,9 @@ class Contact {
   final String lastMessage;
   final DateTime lastMessageTime;
   final bool isOnline;
+  final String userId;
+  final String? email;
+  final String? phone;
 
   Contact({
     required this.name,
@@ -19,101 +24,89 @@ class Contact {
     required this.lastMessage,
     required this.lastMessageTime,
     this.isOnline = false,
+    required this.userId,
+    this.email,
+    this.phone,
   });
+
+  factory Contact.fromJson(Map<String, dynamic> json) {
+    return Contact(
+      name: json['name'],
+      role: json['role'],
+      avatarUrl: json['avatarUrl'],
+      lastMessage: json['lastMessage'] ?? 'No messages yet',
+      lastMessageTime: DateTime.parse(
+          json['lastMessageTime'] ?? DateTime.now().toIso8601String()),
+      isOnline: json['isOnline'] ?? false,
+      userId: json['userId'],
+      email: json['email'],
+      phone: json['phone'],
+    );
+  }
 }
 
-class ContactsListScreen extends StatelessWidget {
-  final List<Contact> contacts = [
-    // Admin contacts
-    Contact(
-      name: "Dr. Sarah Johnson",
-      role: "Admin",
-      lastMessage: "Patient reports reviewed",
-      lastMessageTime: DateTime.now().subtract(const Duration(minutes: 30)),
-      isOnline: true,
-    ),
-    Contact(
-      name: "Dr. Michael Chen",
-      role: "Admin",
-      lastMessage: "Updates on department meeting",
-      lastMessageTime: DateTime.now().subtract(const Duration(hours: 2)),
-    ),
+class ContactsListScreen extends StatefulWidget {
+  const ContactsListScreen({super.key});
 
-    // Nurse contacts
-    Contact(
-      name: "Emma Thompson",
-      role: "Nurse",
-      lastMessage: "Medication schedule updated",
-      lastMessageTime: DateTime.now().subtract(const Duration(minutes: 45)),
-      isOnline: true,
-    ),
-    Contact(
-      name: "James Wilson",
-      role: "Nurse",
-      lastMessage: "Patient vitals recorded",
-      lastMessageTime: DateTime.now().subtract(const Duration(hours: 1)),
-      isOnline: true,
-    ),
+  @override
+  State<ContactsListScreen> createState() => _ContactsListScreenState();
+}
 
-    // Nutritionist contacts
-    Contact(
-      name: "Lisa Martinez",
-      role: "Nutritionist",
-      lastMessage: "New diet plan ready",
-      lastMessageTime: DateTime.now().subtract(const Duration(hours: 3)),
-      isOnline: true,
-    ),
-    Contact(
-      name: "David Brown",
-      role: "Nutritionist",
-      lastMessage: "Dietary recommendations sent",
-      lastMessageTime: DateTime.now().subtract(const Duration(hours: 4)),
-    ),
+class _ContactsListScreenState extends State<ContactsListScreen> {
+  Map<String, List<Contact>> _groupedContacts = {};
+  bool _isLoading = true;
+  String? _error;
 
-    // Relative contacts
-    Contact(
-      name: "Mary Smith",
-      role: "Relative",
-      lastMessage: "Thanks for the update",
-      lastMessageTime: DateTime.now().subtract(const Duration(hours: 5)),
-    ),
-    Contact(
-      name: "John Davis",
-      role: "Relative",
-      lastMessage: "Will visit tomorrow",
-      lastMessageTime: DateTime.now().subtract(const Duration(hours: 6)),
-      isOnline: true,
-    ),
-  ];
-
-  Map<String, List<Contact>> _groupContactsByRole() {
-    // Create a map to store contacts by role
-    final grouped = <String, List<Contact>>{};
-
-    // Group contacts by their roles
-    for (var contact in contacts) {
-      if (!grouped.containsKey(contact.role)) {
-        grouped[contact.role] = [];
-      }
-      grouped[contact.role]!.add(contact);
-    }
-
-    // Define the desired order of roles
-    final roleOrder = ["Admin", "Nurse", "Nutritionist", "Relative"];
-
-    // Create a new map with the sorted roles
-    final sortedGroups = Map.fromEntries(
-        roleOrder.map((role) => MapEntry(role, grouped[role] ?? [])));
-
-    return sortedGroups;
+  @override
+  void initState() {
+    super.initState();
+    _fetchContacts();
   }
 
-  ContactsListScreen({super.key});
+  Future<void> _fetchContacts() async {
+    try {
+      final response = await http.get(
+        Uri.parse('http://localhost:5001/api/users/contacts'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['success'] == true) {
+          Map<String, dynamic> contactsData = data['contacts'];
+
+          setState(() {
+            _groupedContacts = contactsData.map((key, value) {
+              List<Contact> contacts = (value as List)
+                  .map((contact) => Contact.fromJson(contact))
+                  .toList();
+              return MapEntry(key, contacts);
+            });
+            _isLoading = false;
+          });
+        } else {
+          setState(() {
+            _error = 'Failed to load contacts';
+            _isLoading = false;
+          });
+        }
+      } else {
+        setState(() {
+          _error = 'Server error: ${response.statusCode}';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _error = 'Network error: $e';
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final groupedContacts = _groupContactsByRole();
-
     return Scaffold(
       backgroundColor: Colors.grey[50],
       body: CustomScrollView(
@@ -168,36 +161,43 @@ class ContactsListScreen extends StatelessWidget {
                 onPressed: () {},
               ),
             ],
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(1),
-              child: Container(
-                height: 1,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.white.withOpacity(0.2),
-                      Colors.white.withOpacity(0.1),
-                    ],
-                  ),
+          ),
+          if (_isLoading)
+            const SliverFillRemaining(
+              child: Center(
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else if (_error != null)
+            SliverFillRemaining(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(_error!),
+                    ElevatedButton(
+                      onPressed: _fetchContacts,
+                      child: const Text('Retry'),
+                    ),
+                  ],
                 ),
               ),
+            )
+          else
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final role = _groupedContacts.keys.elementAt(index);
+                  final roleContacts = _groupedContacts[role]!;
+                  return _buildRoleSection(context, role, roleContacts);
+                },
+                childCount: _groupedContacts.length,
+              ),
             ),
-          ),
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final role = groupedContacts.keys.elementAt(index);
-                final roleContacts = groupedContacts[role]!;
-                return _buildRoleSection(
-                    context, role, roleContacts); // Fix parameter order
-              },
-              childCount: groupedContacts.length,
-            ),
-          ),
         ],
       ),
       bottomNavigationBar: CustomBottomBar(
-        selectedIndex: 2, // Messages tab
+        selectedIndex: 2,
         onItemSelected: (index) {},
       ),
     );
@@ -320,13 +320,6 @@ class ContactsListScreen extends StatelessWidget {
                           color: Colors.white,
                           width: 2,
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.green.withOpacity(0.3),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
                       ),
                     ),
                   ),
@@ -345,6 +338,16 @@ class ContactsListScreen extends StatelessWidget {
                       color: Colors.grey[800],
                     ),
                   ),
+                  if (contact.email != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      contact.email!,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 4),
                   Text(
                     contact.lastMessage,
@@ -383,7 +386,6 @@ class ContactsListScreen extends StatelessWidget {
   }
 
   String _formatLastMessageTime(DateTime time) {
-    // Previous time formatting logic remains the same
     final now = DateTime.now();
     final difference = now.difference(time);
 

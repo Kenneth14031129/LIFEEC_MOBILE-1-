@@ -217,3 +217,92 @@ exports.changePassword = async (req, res) => {
     res.status(500).json({ message: 'Server error during password change' });
   }
 };
+
+exports.getContactsList = async (req, res) => {
+  try {
+    // Get all users with specified roles
+    const users = await User.find({
+      userType: { 
+        $in: ['admin','nurse', 'nutritionist', 'relative'] 
+      }
+    })
+    .select('fullName userType email phone createdAt')
+    .sort({ userType: 1, fullName: 1 });
+
+    // Transform the data to match the contact list format
+    const contacts = users.map(user => ({
+      name: user.fullName,
+      role: capitalizeFirstLetter(user.userType),
+      lastMessage: "",
+      lastMessageTime: new Date(),
+      isOnline: false,
+      email: user.email,
+      phone: user.phone,
+      userId: user._id
+    }));
+
+    // Group contacts by role
+    const groupedContacts = contacts.reduce((acc, contact) => {
+      if (!acc[contact.role]) {
+        acc[contact.role] = [];
+      }
+      acc[contact.role].push(contact);
+      return acc;
+    }, {});
+
+    res.status(200).json({
+      success: true,
+      contacts: groupedContacts
+    });
+  } catch (error) {
+    console.error('Get contacts error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error retrieving contacts',
+      error: error.message
+    });
+  }
+};
+
+// Helper function to capitalize first letter
+function capitalizeFirstLetter(string) {
+  return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+// Add this new function to get a specific user's contact details
+exports.getContactDetails = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    const user = await User.findById(userId)
+      .select('fullName userType email phone createdAt');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Contact not found'
+      });
+    }
+
+    const contact = {
+      name: user.fullName,
+      role: capitalizeFirstLetter(user.userType),
+      email: user.email,
+      phone: user.phone,
+      userId: user._id,
+      isOnline: false
+    };
+
+    res.status(200).json({
+      success: true,
+      contact
+    });
+  } catch (error) {
+    console.error('Get contact details error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error retrieving contact details',
+      error: error.message
+    });
+  }
+};
