@@ -35,7 +35,7 @@ class CustomBottomBar extends StatelessWidget {
         case 2:
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => ContactsListScreen()),
+            MaterialPageRoute(builder: (context) => const ContactsListScreen()),
           );
           break;
       }

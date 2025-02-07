@@ -62,7 +62,7 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
   bool _isLoading = true;
   String? _error;
   String userRole = 'nurse';
-  int _selectedIndex = 0;
+  int _selectedIndex = 2;
   String? userId;
   String userInitial = 'N';
   int _unreadNotifications = 0;
@@ -191,8 +191,30 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
           Map<String, dynamic> contactsData = data['contacts'];
 
           setState(() {
-            // Filter contacts based on user role
-            if (userRole.toLowerCase() == 'relative' ||
+            if (userRole.toLowerCase() == 'nurse') {
+              // For nurses, show Admin, Nurse, Nutritionist, and Relative contacts
+              _groupedContacts = Map.fromEntries(
+                contactsData.entries
+                    .where((entry) =>
+                        entry.key == 'Admin' ||
+                        entry.key == 'Nurse' ||
+                        entry.key == 'Nutritionist' ||
+                        entry.key == 'Relative')
+                    .map((entry) {
+                  List<Contact> contacts = (entry.value as List)
+                      // Filter out the current user
+                      .where((contact) => contact['userId'] != userId)
+                      .map((contact) => Contact.fromJson(contact))
+                      .toList();
+                  // Only include the role if there are contacts after filtering
+                  return contacts.isNotEmpty
+                      ? MapEntry(entry.key, contacts)
+                      : null;
+                }).whereType<
+                        MapEntry<String,
+                            List<Contact>>>(), // Remove null entries
+              );
+            } else if (userRole.toLowerCase() == 'relative' ||
                 userRole.toLowerCase() == 'nutritionist') {
               // Only show Nurse and Admin contacts for relatives and nutritionists
               _groupedContacts = Map.fromEntries(
@@ -450,7 +472,8 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
                       : [] // For other roles
               ),
           if (userRole.toLowerCase() == 'relative' ||
-              userRole.toLowerCase() == 'nutritionist')
+              userRole.toLowerCase() == 'nutritionist' ||
+              userRole.toLowerCase() == 'nurse')
             SliverToBoxAdapter(
               child: _buildSearchBar(),
             ),
