@@ -18,11 +18,7 @@ class RoleNavigation extends StatelessWidget {
 
   List<BottomNavigationBarItem> _getNavigationItems() {
     switch (userRole.toLowerCase()) {
-      case 'relative':
-        return [];
-
       case 'nurse':
-      case 'nutritionist':
         return [
           const BottomNavigationBarItem(
             icon: Padding(
@@ -57,13 +53,8 @@ class RoleNavigation extends StatelessWidget {
 
   Future<Widget> _handleNavigation(BuildContext context, int index) async {
     switch (userRole.toLowerCase()) {
-      case 'relative':
-        // For relatives, only Messages screen is available at index 0
-        return const ContactsListScreen();
-
       case 'nurse':
-      case 'nutritionist':
-        // For staff, regular navigation
+        // For nurses, all screens
         switch (index) {
           case 0:
             return const DashboardScreen();
@@ -76,14 +67,15 @@ class RoleNavigation extends StatelessWidget {
         }
 
       default:
-        return const DashboardScreen();
+        return const ResidentsList();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Don't show navigation bar for relatives
-    if (userRole.toLowerCase() == 'relative') {
+    // Don't show navigation bar for relatives and nutritionists
+    if (userRole.toLowerCase() == 'relative' ||
+        userRole.toLowerCase() == 'nutritionist') {
       return const SizedBox.shrink();
     }
 

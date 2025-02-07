@@ -283,13 +283,16 @@ class _ResidentsListState extends State<ResidentsList> {
           _buildResidentsList(),
         ],
       ),
-      bottomNavigationBar: RoleNavigation(
-        userRole: userRole, // Get this from SharedPreferences or user state
-        selectedIndex: _selectedIndex,
-        onItemSelected: (index) {
-          setState(() => _selectedIndex = index);
-        },
-      ),
+      bottomNavigationBar: userRole.toLowerCase() == 'relative' ||
+              userRole.toLowerCase() == 'nutritionist'
+          ? null
+          : RoleNavigation(
+              userRole: userRole,
+              selectedIndex: _selectedIndex,
+              onItemSelected: (index) {
+                setState(() => _selectedIndex = index);
+              },
+            ),
     );
   }
 
@@ -323,24 +326,26 @@ class _ResidentsListState extends State<ResidentsList> {
                   ),
                 ),
                 const Spacer(),
-                Stack(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.notifications_outlined),
-                      color: Colors.white,
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (BuildContext context) => NotificationModal(
-                            onUnreadCountChanged: _updateUnreadCount,
-                          ),
-                        );
-                      },
-                    ),
-                    NotificationBadge(count: _unreadNotifications),
-                  ],
-                ),
-                const SizedBox(width: 8),
+                // Add the condition here
+                if (userRole.toLowerCase() != 'nutritionist')
+                  Stack(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.notifications_outlined),
+                        color: Colors.white,
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) =>
+                                NotificationModal(
+                              onUnreadCountChanged: _updateUnreadCount,
+                            ),
+                          );
+                        },
+                      ),
+                      NotificationBadge(count: _unreadNotifications),
+                    ],
+                  ),
                 CircleAvatar(
                   radius: 18,
                   backgroundColor: Colors.white.withOpacity(0.2),

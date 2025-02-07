@@ -7,6 +7,8 @@ import 'dashboard.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'residents_list.dart';
+
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -169,9 +171,14 @@ class LoginPageState extends State<LoginPage>
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => userRole == 'relative'
-                ? const ContactsListScreen()
-                : const DashboardScreen(),
+            builder: (context) {
+              if (userRole == 'nurse') {
+                return const DashboardScreen();
+              } else {
+                // Both nutritionists and relatives go to ContactsListScreen
+                return const ContactsListScreen();
+              }
+            },
           ),
         );
       }

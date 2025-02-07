@@ -66,6 +66,39 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
   String? userId;
   String userInitial = 'N';
   int _unreadNotifications = 0;
+  String _searchQuery = '';
+
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<MapEntry<String, List<Contact>>> get filteredContacts {
+    if (_searchQuery.isEmpty) {
+      return _groupedContacts.entries.toList();
+    }
+
+    Map<String, List<Contact>> filtered = {};
+    _groupedContacts.forEach((role, contacts) {
+      final filteredList = contacts
+          .where((contact) =>
+              contact.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+              (contact.email
+                      ?.toLowerCase()
+                      .contains(_searchQuery.toLowerCase()) ??
+                  false))
+          .toList();
+
+      if (filteredList.isNotEmpty) {
+        filtered[role] = filteredList;
+      }
+    });
+
+    return filtered.entries.toList();
+  }
 
   @override
   void initState() {
@@ -159,8 +192,9 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
 
           setState(() {
             // Filter contacts based on user role
-            if (userRole.toLowerCase() == 'relative') {
-              // Only show Nurse and Admin contacts for relatives
+            if (userRole.toLowerCase() == 'relative' ||
+                userRole.toLowerCase() == 'nutritionist') {
+              // Only show Nurse and Admin contacts for relatives and nutritionists
               _groupedContacts = Map.fromEntries(
                 contactsData.entries
                     .where(
@@ -203,6 +237,63 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
     }
   }
 
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: TextField(
+          controller: _searchController,
+          onChanged: (value) {
+            setState(() {
+              _searchQuery = value;
+            });
+          },
+          decoration: InputDecoration(
+            hintText: 'Search contacts...',
+            hintStyle: GoogleFonts.poppins(
+              color: Colors.grey[400],
+              fontSize: 14,
+            ),
+            prefixIcon: Icon(
+              Icons.search,
+              color: Colors.grey[400],
+            ),
+            suffixIcon: _searchQuery.isNotEmpty
+                ? IconButton(
+                    icon: Icon(
+                      Icons.clear,
+                      color: Colors.grey[400],
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _searchQuery = '';
+                        _searchController.clear();
+                      });
+                    },
+                  )
+                : null,
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -241,27 +332,27 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
               ),
               actions: userRole.toLowerCase() == 'relative'
                   ? [
-                      Stack(
-                        children: [
-                          IconButton(
-                            icon: const Icon(
-                              Icons.notifications_outlined,
-                              size: 24,
+                      // For relatives - show both notification and profile
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8, top: 12),
+                        child: Stack(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.notifications_outlined),
                               color: Colors.white,
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) =>
+                                      NotificationModal(
+                                    onUnreadCountChanged: _updateUnreadCount,
+                                  ),
+                                );
+                              },
                             ),
-                            padding: const EdgeInsets.only(right: 8, top: 12),
-                            onPressed: () {
-                              showDialog(
-                                context: context,
-                                builder: (BuildContext context) =>
-                                    NotificationModal(
-                                  onUnreadCountChanged: _updateUnreadCount,
-                                ),
-                              );
-                            },
-                          ),
-                          NotificationBadge(count: _unreadNotifications),
-                        ],
+                            NotificationBadge(count: _unreadNotifications),
+                          ],
+                        ),
                       ),
                       Padding(
                         padding: const EdgeInsets.only(right: 16, top: 12),
@@ -308,7 +399,61 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
                         ),
                       ),
                     ]
-                  : []),
+                  : userRole.toLowerCase() == 'nutritionist'
+                      ? [
+                          // For nutritionists - show only profile
+                          Padding(
+                            padding: const EdgeInsets.only(right: 16, top: 12),
+                            child: CircleAvatar(
+                              radius: 16,
+                              backgroundColor: Colors.white.withOpacity(0.2),
+                              child: InkWell(
+                                onTap: () {
+                                  if (userId != null) {
+                                    showDialog(
+                                      context: context,
+                                      builder: (context) => ProfileModal(
+                                        userId: userId!,
+                                        onLogout: () async {
+                                          final prefs = await SharedPreferences
+                                              .getInstance();
+                                          await prefs.clear();
+                                          if (mounted) {
+                                            Navigator.of(context,
+                                                    rootNavigator: true)
+                                                .pushAndRemoveUntil(
+                                              MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      const LoginPage()),
+                                              (Route<dynamic> route) => false,
+                                            );
+                                          }
+                                        },
+                                      ),
+                                    ).then((_) {
+                                      _loadUserData();
+                                    });
+                                  }
+                                },
+                                child: Text(
+                                  userInitial,
+                                  style: GoogleFonts.poppins(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ]
+                      : [] // For other roles
+              ),
+          if (userRole.toLowerCase() == 'relative' ||
+              userRole.toLowerCase() == 'nutritionist')
+            SliverToBoxAdapter(
+              child: _buildSearchBar(),
+            ),
           if (_isLoading)
             const SliverFillRemaining(
               child: Center(
@@ -334,17 +479,17 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
             SliverList(
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
-                  final role = _groupedContacts.keys.elementAt(index);
-                  final roleContacts = _groupedContacts[role]!;
-                  return _buildRoleSection(context, role, roleContacts);
+                  final entry = filteredContacts[index];
+                  return _buildRoleSection(context, entry.key, entry.value);
                 },
-                childCount: _groupedContacts.length,
+                childCount: filteredContacts.length,
               ),
             ),
         ],
       ),
-      bottomNavigationBar: userRole.toLowerCase() == 'relative'
-          ? null // No bottom navigation for relatives
+      bottomNavigationBar: userRole.toLowerCase() == 'relative' ||
+              userRole.toLowerCase() == 'nutritionist'
+          ? null
           : RoleNavigation(
               userRole: userRole,
               selectedIndex: _selectedIndex,

@@ -57,7 +57,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           });
         }
       } catch (e) {
-        print('Error loading user data: $e');
+        if (kDebugMode) {
+          print('Error loading user data: $e');
+        }
       }
     }
   }
