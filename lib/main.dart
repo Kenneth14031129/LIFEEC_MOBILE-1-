@@ -76,7 +76,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const ContactsListScreen(),
+      home: const LoginPage(),
     );
   }
 }

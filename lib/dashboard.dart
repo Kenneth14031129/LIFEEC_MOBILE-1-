@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'alert_history_modal.dart';
 import 'bottomappbar.dart';
+import 'login_page.dart';
 import 'notification_modal.dart';
 import 'profile_modal.dart';
 import 'resident_history_modal.dart';
@@ -380,13 +381,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               final prefs =
                                   await SharedPreferences.getInstance();
                               await prefs.clear();
+
+                              // Add proper navigation
+                              if (mounted) {
+                                Navigator.of(context, rootNavigator: true)
+                                    .pushAndRemoveUntil(
+                                  MaterialPageRoute(
+                                      builder: (context) => const LoginPage()),
+                                  (Route<dynamic> route) => false,
+                                );
+                              }
                             },
+                          ),
+                        ).then((_) {
+                          // Refresh user data when profile modal is closed
+                          _loadUserData();
+                        });
+                      } else {
+                        // Show error if userId is null
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Unable to load profile. Please try logging in again.',
+                              style: GoogleFonts.poppins(color: Colors.white),
+                            ),
+                            backgroundColor: Colors.red[700],
                           ),
                         );
                       }
                     },
                     child: Text(
-                      userInitial, // Use the userInitial here instead of 'N'
+                      userInitial,
                       style: GoogleFonts.poppins(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
