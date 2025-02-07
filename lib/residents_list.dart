@@ -5,10 +5,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-import 'bottomappbar.dart';
 import 'notification_modal.dart';
 import 'profile_modal.dart';
 import 'residents_details.dart';
+import 'role_navigation.dart';
 
 class ResidentsList extends StatefulWidget {
   const ResidentsList({super.key});
@@ -26,6 +26,7 @@ class _ResidentsListState extends State<ResidentsList> {
   int _unreadNotifications = 0;
   String? userId;
   String userInitial = 'N';
+  String userRole = 'nurse';
 
   @override
   void initState() {
@@ -282,7 +283,8 @@ class _ResidentsListState extends State<ResidentsList> {
           _buildResidentsList(),
         ],
       ),
-      bottomNavigationBar: CustomBottomBar(
+      bottomNavigationBar: RoleNavigation(
+        userRole: userRole, // Get this from SharedPreferences or user state
         selectedIndex: _selectedIndex,
         onItemSelected: (index) {
           setState(() => _selectedIndex = index);

@@ -1,10 +1,15 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
-import 'bottomappbar.dart';
+import 'login_page.dart';
 import 'messages_page.dart';
+import 'notification_modal.dart';
+import 'profile_modal.dart';
+import 'role_navigation.dart';
 
 class Contact {
   final String name;
@@ -56,11 +61,87 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
   Map<String, List<Contact>> _groupedContacts = {};
   bool _isLoading = true;
   String? _error;
+  String userRole = 'nurse';
+  int _selectedIndex = 0;
+  String? userId;
+  String userInitial = 'N';
+  int _unreadNotifications = 0;
 
   @override
   void initState() {
     super.initState();
+    _loadUserRole();
+    _loadUserId();
     _fetchContacts();
+    _fetchUnreadCount();
+  }
+
+  Future<void> _loadUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      userId = prefs.getString('userId');
+    });
+    if (userId != null) {
+      _loadUserData();
+    }
+  }
+
+  Future<void> _loadUserData() async {
+    if (userId != null) {
+      try {
+        final response = await http.get(
+          Uri.parse('http://localhost:5001/api/users/profile/$userId'),
+          headers: {'Content-Type': 'application/json'},
+        );
+
+        if (response.statusCode == 200) {
+          final userData = json.decode(response.body);
+          setState(() {
+            userInitial =
+                userData['fullName']?.substring(0, 1).toUpperCase() ?? 'N';
+          });
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('Error loading user data: $e');
+        }
+      }
+    }
+  }
+
+  Future<void> _fetchUnreadCount() async {
+    try {
+      final response = await http.get(
+        Uri.parse('http://localhost:5001/api/emergency-alerts'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        final unreadCount =
+            data.where((alert) => !(alert['read'] ?? false)).length;
+        setState(() {
+          _unreadNotifications = unreadCount;
+        });
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error fetching unread count: $e');
+      }
+    }
+  }
+
+  void _updateUnreadCount(int count) {
+    setState(() {
+      _unreadNotifications = count;
+    });
+  }
+
+  Future<void> _loadUserRole() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      userRole = prefs.getString('userRole') ?? 'nurse';
+    });
   }
 
   Future<void> _fetchContacts() async {
@@ -77,12 +158,29 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
           Map<String, dynamic> contactsData = data['contacts'];
 
           setState(() {
-            _groupedContacts = contactsData.map((key, value) {
-              List<Contact> contacts = (value as List)
-                  .map((contact) => Contact.fromJson(contact))
-                  .toList();
-              return MapEntry(key, contacts);
-            });
+            // Filter contacts based on user role
+            if (userRole.toLowerCase() == 'relative') {
+              // Only show Nurse and Admin contacts for relatives
+              _groupedContacts = Map.fromEntries(
+                contactsData.entries
+                    .where(
+                        (entry) => entry.key == 'Nurse' || entry.key == 'Admin')
+                    .map((entry) {
+                  List<Contact> contacts = (entry.value as List)
+                      .map((contact) => Contact.fromJson(contact))
+                      .toList();
+                  return MapEntry(entry.key, contacts);
+                }),
+              );
+            } else {
+              // Show all contacts for other users
+              _groupedContacts = contactsData.map((key, value) {
+                List<Contact> contacts = (value as List)
+                    .map((contact) => Contact.fromJson(contact))
+                    .toList();
+                return MapEntry(key, contacts);
+              });
+            }
             _isLoading = false;
           });
         } else {
@@ -112,56 +210,105 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: 70,
-            floating: false,
-            pinned: true,
-            elevation: 0,
-            centerTitle: false,
-            flexibleSpace: FlexibleSpaceBar(
+              expandedHeight: 70,
+              floating: false,
+              pinned: true,
+              elevation: 0,
               centerTitle: false,
-              titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
-              title: Text(
-                'Messages',
-                style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+              flexibleSpace: FlexibleSpaceBar(
+                centerTitle: false,
+                titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
+                title: Text(
+                  'Messages',
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
-              ),
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Colors.cyan[500] ?? Colors.cyan,
-                      Colors.blue[600] ?? Colors.blue,
-                    ],
+                background: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.cyan[500] ?? Colors.cyan,
+                        Colors.blue[600] ?? Colors.blue,
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(
-                  Icons.search,
-                  size: 28,
-                  color: Colors.white,
-                ),
-                padding: const EdgeInsets.only(right: 16, top: 18),
-                onPressed: () {},
-              ),
-              IconButton(
-                icon: const Icon(
-                  Icons.filter_list,
-                  size: 28,
-                  color: Colors.white,
-                ),
-                padding: const EdgeInsets.only(right: 16, left: 8, top: 18),
-                onPressed: () {},
-              ),
-            ],
-          ),
+              actions: userRole.toLowerCase() == 'relative'
+                  ? [
+                      Stack(
+                        children: [
+                          IconButton(
+                            icon: const Icon(
+                              Icons.notifications_outlined,
+                              size: 24,
+                              color: Colors.white,
+                            ),
+                            padding: const EdgeInsets.only(right: 8, top: 12),
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext context) =>
+                                    NotificationModal(
+                                  onUnreadCountChanged: _updateUnreadCount,
+                                ),
+                              );
+                            },
+                          ),
+                          NotificationBadge(count: _unreadNotifications),
+                        ],
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(right: 16, top: 12),
+                        child: CircleAvatar(
+                          radius: 16,
+                          backgroundColor: Colors.white.withOpacity(0.2),
+                          child: InkWell(
+                            onTap: () {
+                              if (userId != null) {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => ProfileModal(
+                                    userId: userId!,
+                                    onLogout: () async {
+                                      final prefs =
+                                          await SharedPreferences.getInstance();
+                                      await prefs.clear();
+                                      if (mounted) {
+                                        Navigator.of(context,
+                                                rootNavigator: true)
+                                            .pushAndRemoveUntil(
+                                          MaterialPageRoute(
+                                              builder: (context) =>
+                                                  const LoginPage()),
+                                          (Route<dynamic> route) => false,
+                                        );
+                                      }
+                                    },
+                                  ),
+                                ).then((_) {
+                                  _loadUserData();
+                                });
+                              }
+                            },
+                            child: Text(
+                              userInitial,
+                              style: GoogleFonts.poppins(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ]
+                  : []),
           if (_isLoading)
             const SliverFillRemaining(
               child: Center(
@@ -196,10 +343,15 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
             ),
         ],
       ),
-      bottomNavigationBar: CustomBottomBar(
-        selectedIndex: 2,
-        onItemSelected: (index) {},
-      ),
+      bottomNavigationBar: userRole.toLowerCase() == 'relative'
+          ? null // No bottom navigation for relatives
+          : RoleNavigation(
+              userRole: userRole,
+              selectedIndex: _selectedIndex,
+              onItemSelected: (index) {
+                setState(() => _selectedIndex = index);
+              },
+            ),
     );
   }
 

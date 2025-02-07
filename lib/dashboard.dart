@@ -6,11 +6,11 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'alert_history_modal.dart';
-import 'bottomappbar.dart';
 import 'login_page.dart';
 import 'notification_modal.dart';
 import 'profile_modal.dart';
 import 'resident_history_modal.dart';
+import 'role_navigation.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -32,6 +32,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
   String? userId;
   String userInitial = 'N';
+  String userRole = 'nurse';
 
   @override
   void initState() {
@@ -274,12 +275,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ],
             ),
-      bottomNavigationBar: CustomBottomBar(
+      bottomNavigationBar: RoleNavigation(
+        userRole: userRole, // Get this from SharedPreferences or user state
         selectedIndex: _selectedIndex,
         onItemSelected: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
+          setState(() => _selectedIndex = index);
         },
       ),
     );

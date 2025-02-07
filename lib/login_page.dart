@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'contact_list_screen.dart';
 import 'dashboard.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -137,7 +138,8 @@ class LoginPageState extends State<LoginPage>
 
         // Save user ID to SharedPreferences - Add this block
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('userId', response['user']['id']); // Save user ID
+        await prefs.setString('userId', response['user']['id']);
+        await prefs.setString('userRole', response['user']['userType']);
         if (kDebugMode) {
           print('Saved userId: ${response['user']['id']}');
         } // Debug print
@@ -163,9 +165,14 @@ class LoginPageState extends State<LoginPage>
 
       if (mounted) {
         // Successfully logged in or registered
+        final userRole = response['user']['userType'].toString().toLowerCase();
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const DashboardScreen()),
+          MaterialPageRoute(
+            builder: (context) => userRole == 'relative'
+                ? const ContactsListScreen()
+                : const DashboardScreen(),
+          ),
         );
       }
     } catch (error) {
