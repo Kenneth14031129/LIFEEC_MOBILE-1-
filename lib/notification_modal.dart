@@ -399,12 +399,6 @@ class _NotificationModalState extends State<NotificationModal> {
                     'Not provided',
               ),
               _buildContactInfo(
-                'Relation',
-                (alert['emergencyContact'] as Map<String, dynamic>)['relation']
-                        as String? ??
-                    'Not specified',
-              ),
-              _buildContactInfo(
                 'Phone',
                 (alert['emergencyContact'] as Map<String, dynamic>)['phone']
                         as String? ??
