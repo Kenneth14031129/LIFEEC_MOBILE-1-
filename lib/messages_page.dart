@@ -1,30 +1,53 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Message {
   final String content;
   final DateTime timestamp;
   final bool isFromMe;
   final bool isRead;
+  final String id;
+  final String senderId;
+  final String receiverId;
 
   Message({
     required this.content,
     required this.timestamp,
     required this.isFromMe,
     this.isRead = false,
+    required this.id,
+    required this.senderId,
+    required this.receiverId,
   });
+
+  factory Message.fromJson(Map<String, dynamic> json, String currentUserId) {
+    return Message(
+      id: json['_id'],
+      content: json['content'],
+      timestamp: DateTime.parse(json['timestamp']),
+      isFromMe: json['senderId'] == currentUserId,
+      isRead: json['isRead'] ?? false,
+      senderId: json['senderId'],
+      receiverId: json['receiverId'],
+    );
+  }
 }
 
 class MessagesPage extends StatefulWidget {
   final String contactName;
   final String contactRole;
   final bool isOnline;
+  final String contactId;
 
   const MessagesPage({
     super.key,
     required this.contactName,
     required this.contactRole,
     required this.isOnline,
+    required this.contactId,
   });
 
   @override
@@ -34,27 +57,117 @@ class MessagesPage extends StatefulWidget {
 class _MessagesPageState extends State<MessagesPage> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final List<Message> _messages = [
-    Message(
-      content: "Hi, how can I help you today?",
-      timestamp: DateTime.now().subtract(const Duration(days: 1)),
-      isFromMe: false,
-      isRead: true,
-    ),
-    Message(
-      content: "I need to discuss the patient's latest test results.",
-      timestamp: DateTime.now().subtract(const Duration(hours: 2)),
-      isFromMe: true,
-      isRead: true,
-    ),
-    Message(
-      content:
-          "Of course, I've just reviewed them. The blood work shows improvement in all key markers.",
-      timestamp: DateTime.now().subtract(const Duration(hours: 1)),
-      isFromMe: false,
-      isRead: true,
-    ),
-  ];
+  List<Message> _messages = [];
+  String? _currentUserId;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentUserId().then((_) {
+      _fetchMessages();
+      _setupPeriodicRefresh();
+    });
+  }
+
+  Future<void> _loadCurrentUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _currentUserId = prefs.getString('userId');
+    });
+  }
+
+  void _setupPeriodicRefresh() {
+    // Refresh messages every 30 seconds
+    Future.doWhile(() async {
+      await Future.delayed(const Duration(seconds: 30));
+      if (!mounted) return false;
+      await _fetchMessages();
+      return true;
+    });
+  }
+
+  Future<void> _fetchMessages() async {
+    if (_currentUserId == null) return;
+
+    try {
+      final response = await http.get(
+        Uri.parse(
+            'http://localhost:5001/api/messages/conversation/$_currentUserId/${widget.contactId}'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          setState(() {
+            _messages = (data['messages'] as List)
+                .map((msg) => Message.fromJson(msg, _currentUserId!))
+                .toList();
+            _isLoading = false;
+          });
+
+          // Scroll to bottom after loading messages
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (_scrollController.hasClients) {
+              _scrollController.animateTo(
+                _scrollController.position.maxScrollExtent,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+              );
+            }
+          });
+        }
+      }
+    } catch (e) {
+      // Handle error appropriately
+      debugPrint('Error fetching messages: $e');
+    }
+  }
+
+  Future<void> _sendMessage() async {
+    if (_messageController.text.trim().isEmpty || _currentUserId == null)
+      return;
+
+    final messageContent = _messageController.text;
+    _messageController.clear();
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:5001/api/messages'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'senderId': _currentUserId,
+          'receiverId': widget.contactId,
+          'content': messageContent,
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          // Add the new message to the list
+          setState(() {
+            _messages.add(Message.fromJson(data['message'], _currentUserId!));
+          });
+
+          // Scroll to the bottom
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent + 100,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      }
+    } catch (e) {
+      // Handle error appropriately
+      debugPrint('Error sending message: $e');
+      // You might want to show a snackbar here
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to send message')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -261,27 +374,6 @@ class _MessagesPageState extends State<MessagesPage> {
           ],
         ),
       ),
-    );
-  }
-
-  void _sendMessage() {
-    if (_messageController.text.trim().isEmpty) return;
-
-    setState(() {
-      _messages.add(
-        Message(
-          content: _messageController.text,
-          timestamp: DateTime.now(),
-          isFromMe: true,
-        ),
-      );
-    });
-
-    _messageController.clear();
-    _scrollController.animateTo(
-      _scrollController.position.maxScrollExtent + 100,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOut,
     );
   }
 

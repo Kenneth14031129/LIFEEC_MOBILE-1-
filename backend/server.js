@@ -10,6 +10,7 @@ const healthPlanRoutes = require('./routes/healthPlanRoutes');
 const mealRecordRoutes = require('./routes/mealRecordRoutes');
 const activityRecordRoutes = require('./routes/activityRecordRoutes');
 const emergencyAlertRoutes = require('./routes/emergencyAlertRoutes');
+const messageRoutes = require('./routes/messagesRoutes');
 
 const app = express();
 
@@ -44,6 +45,7 @@ app.use('/api/healthplans', healthPlanRoutes);
 app.use('/api/meals', mealRecordRoutes);
 app.use('/api/activities', activityRecordRoutes);
 app.use('/api/emergency-alerts', emergencyAlertRoutes);
+app.use('/api/messages', messageRoutes);
 
 // Test Routes
 app.get('/test', (req, res) => {

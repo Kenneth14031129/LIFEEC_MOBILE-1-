@@ -587,6 +587,7 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
               contactName: contact.name,
               contactRole: contact.role,
               isOnline: contact.isOnline,
+              contactId: contact.userId,
             ),
           ),
         );
