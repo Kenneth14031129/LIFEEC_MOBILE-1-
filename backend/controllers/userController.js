@@ -2,6 +2,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Message = require('../models/Message');
 
 // Register new user
 exports.registerUser = async (req, res) => {
@@ -218,28 +219,109 @@ exports.changePassword = async (req, res) => {
   }
 };
 
+// Helper function to capitalize first letter
+function capitalizeFirstLetter(string) {
+  return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
 exports.getContactsList = async (req, res) => {
   try {
+    const currentUserId = req.query.currentUserId;
+    
+    if (!currentUserId) {
+      return res.status(400).json({
+        success: false,
+        message: 'currentUserId is required'
+      });
+    }
+
     // Get all users with specified roles
     const users = await User.find({
       userType: { 
-        $in: ['admin','nurse', 'nutritionist', 'relative'] 
+        $in: ['admin', 'nurse', 'nutritionist', 'relative'] 
       }
     })
-    .select('fullName userType email phone createdAt')
-    .sort({ userType: 1, fullName: 1 });
+    .select('fullName userType email phone createdAt');
+
+    // Get last messages and unread counts for each conversation
+    const conversationStats = await Message.aggregate([
+      // First stage: Match messages involving current user
+      {
+        $match: {
+          $or: [
+            { senderId: currentUserId },
+            { receiverId: currentUserId }
+          ]
+        }
+      },
+      // Sort messages by timestamp descending to get latest first
+      {
+        $sort: { timestamp: -1 }
+      },
+      // Group by conversation partner and calculate stats
+      {
+        $group: {
+          _id: {
+            $cond: {
+              if: { $eq: ['$senderId', currentUserId] },
+              then: '$receiverId',
+              else: '$senderId'
+            }
+          },
+          lastMessage: { $first: '$$ROOT' },
+          unreadCount: {
+            $sum: {
+              $cond: [
+                { 
+                  $and: [
+                    { $eq: ['$receiverId', currentUserId] },
+                    { $eq: ['$isRead', false] }
+                  ]
+                },
+                1,
+                0
+              ]
+            }
+          }
+        }
+      },
+      // Project the fields we need
+      {
+        $project: {
+          _id: 1,
+          lastMessage: 1,
+          unreadCount: 1
+        }
+      }
+    ]);
+
+    // Create a map of conversation stats for quick lookup
+    const statsMap = new Map();
+    conversationStats.forEach(item => {
+      statsMap.set(item._id.toString(), {
+        lastMessage: item.lastMessage,
+        unreadCount: item.unreadCount
+      });
+    });
 
     // Transform the data to match the contact list format
-    const contacts = users.map(user => ({
-      name: user.fullName,
-      role: capitalizeFirstLetter(user.userType),
-      lastMessage: "",
-      lastMessageTime: new Date(),
-      isOnline: false,
-      email: user.email,
-      phone: user.phone,
-      userId: user._id
-    }));
+    const contacts = users
+      .filter(user => user._id.toString() !== currentUserId) // Exclude current user
+      .map(user => {
+        const stats = statsMap.get(user._id.toString()) || {};
+        
+        return {
+          name: user.fullName,
+          role: capitalizeFirstLetter(user.userType),
+          lastMessage: stats.lastMessage ? stats.lastMessage.content : "No messages yet",
+          lastMessageTime: stats.lastMessage ? stats.lastMessage.timestamp : user.createdAt,
+          isOnline: false, // You can implement online status logic here
+          email: user.email,
+          phone: user.phone,
+          userId: user._id,
+          unreadCount: stats.unreadCount || 0
+        };
+      });
 
     // Group contacts by role
     const groupedContacts = contacts.reduce((acc, contact) => {
@@ -250,10 +332,12 @@ exports.getContactsList = async (req, res) => {
       return acc;
     }, {});
 
+    // Send the response
     res.status(200).json({
       success: true,
       contacts: groupedContacts
     });
+
   } catch (error) {
     console.error('Get contacts error:', error);
     res.status(500).json({
@@ -263,11 +347,6 @@ exports.getContactsList = async (req, res) => {
     });
   }
 };
-
-// Helper function to capitalize first letter
-function capitalizeFirstLetter(string) {
-  return string.charAt(0).toUpperCase() + string.slice(1);
-}
 
 // Add this new function to get a specific user's contact details
 exports.getContactDetails = async (req, res) => {

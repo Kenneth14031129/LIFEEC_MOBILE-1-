@@ -126,8 +126,9 @@ class _MessagesPageState extends State<MessagesPage> {
   }
 
   Future<void> _sendMessage() async {
-    if (_messageController.text.trim().isEmpty || _currentUserId == null)
+    if (_messageController.text.trim().isEmpty || _currentUserId == null) {
       return;
+    }
 
     final messageContent = _messageController.text;
     _messageController.clear();

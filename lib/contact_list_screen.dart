@@ -21,6 +21,7 @@ class Contact {
   final String userId;
   final String? email;
   final String? phone;
+  final int unreadCount;
 
   Contact({
     required this.name,
@@ -32,6 +33,7 @@ class Contact {
     required this.userId,
     this.email,
     this.phone,
+    this.unreadCount = 0,
   });
 
   factory Contact.fromJson(Map<String, dynamic> json) {
@@ -46,6 +48,7 @@ class Contact {
       userId: json['userId'],
       email: json['email'],
       phone: json['phone'],
+      unreadCount: json['unreadCount'] ?? 0,
     );
   }
 }
@@ -103,20 +106,41 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
   @override
   void initState() {
     super.initState();
-    _loadUserRole();
-    _loadUserId();
-    _fetchContacts();
-    _fetchUnreadCount();
+    _loadInitialData();
   }
 
-  Future<void> _loadUserId() async {
+  Future<void> _loadInitialData() async {
+    await _loadUserRole();
+    await _loadUserId(); // Wait for userId to be loaded
+    if (mounted) {
+      _fetchContacts(); // Now fetch contacts after userId is loaded
+      _fetchUnreadCount();
+    }
+  }
+
+  Future<String?> _loadUserRole() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      userId = prefs.getString('userId');
-    });
-    if (userId != null) {
+    final role = prefs.getString('userRole') ?? 'nurse';
+    if (mounted) {
+      setState(() {
+        userRole = role;
+      });
+    }
+    return role;
+  }
+
+  Future<String?> _loadUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    final id = prefs.getString('userId');
+    if (mounted) {
+      setState(() {
+        userId = id;
+      });
+    }
+    if (id != null) {
       _loadUserData();
     }
+    return id;
   }
 
   Future<void> _loadUserData() async {
@@ -170,17 +194,19 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
     });
   }
 
-  Future<void> _loadUserRole() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      userRole = prefs.getString('userRole') ?? 'nurse';
-    });
-  }
-
   Future<void> _fetchContacts() async {
+    if (userId == null) {
+      setState(() {
+        _error = 'User ID not found';
+        _isLoading = false;
+      });
+      return;
+    }
+
     try {
       final response = await http.get(
-        Uri.parse('http://localhost:5001/api/users/contacts'),
+        Uri.parse(
+            'http://localhost:5001/api/users/contacts?currentUserId=$userId'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -204,7 +230,21 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
                   List<Contact> contacts = (entry.value as List)
                       // Filter out the current user
                       .where((contact) => contact['userId'] != userId)
-                      .map((contact) => Contact.fromJson(contact))
+                      .map((contact) => Contact(
+                            name: contact['name'],
+                            role: contact['role'],
+                            avatarUrl: contact['avatarUrl'],
+                            lastMessage:
+                                contact['lastMessage'] ?? 'No messages yet',
+                            lastMessageTime: DateTime.parse(
+                                contact['lastMessageTime'] ??
+                                    DateTime.now().toIso8601String()),
+                            isOnline: contact['isOnline'] ?? false,
+                            userId: contact['userId'],
+                            email: contact['email'],
+                            phone: contact['phone'],
+                            unreadCount: contact['unreadCount'] ?? 0,
+                          ))
                       .toList();
                   // Only include the role if there are contacts after filtering
                   return contacts.isNotEmpty
@@ -223,7 +263,21 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
                         (entry) => entry.key == 'Nurse' || entry.key == 'Admin')
                     .map((entry) {
                   List<Contact> contacts = (entry.value as List)
-                      .map((contact) => Contact.fromJson(contact))
+                      .map((contact) => Contact(
+                            name: contact['name'],
+                            role: contact['role'],
+                            avatarUrl: contact['avatarUrl'],
+                            lastMessage:
+                                contact['lastMessage'] ?? 'No messages yet',
+                            lastMessageTime: DateTime.parse(
+                                contact['lastMessageTime'] ??
+                                    DateTime.now().toIso8601String()),
+                            isOnline: contact['isOnline'] ?? false,
+                            userId: contact['userId'],
+                            email: contact['email'],
+                            phone: contact['phone'],
+                            unreadCount: contact['unreadCount'] ?? 0,
+                          ))
                       .toList();
                   return MapEntry(entry.key, contacts);
                 }),
@@ -232,7 +286,21 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
               // Show all contacts for other users
               _groupedContacts = contactsData.map((key, value) {
                 List<Contact> contacts = (value as List)
-                    .map((contact) => Contact.fromJson(contact))
+                    .map((contact) => Contact(
+                          name: contact['name'],
+                          role: contact['role'],
+                          avatarUrl: contact['avatarUrl'],
+                          lastMessage:
+                              contact['lastMessage'] ?? 'No messages yet',
+                          lastMessageTime: DateTime.parse(
+                              contact['lastMessageTime'] ??
+                                  DateTime.now().toIso8601String()),
+                          isOnline: contact['isOnline'] ?? false,
+                          userId: contact['userId'],
+                          email: contact['email'],
+                          phone: contact['phone'],
+                          unreadCount: contact['unreadCount'] ?? 0,
+                        ))
                     .toList();
                 return MapEntry(key, contacts);
               });
@@ -256,6 +324,7 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
         _error = 'Network error: $e';
         _isLoading = false;
       });
+      debugPrint('Error fetching contacts: $e');
     }
   }
 
@@ -659,16 +728,6 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
                       color: Colors.grey[800],
                     ),
                   ),
-                  if (contact.email != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      contact.email!,
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
                   const SizedBox(height: 4),
                   Text(
                     contact.lastMessage,
@@ -685,6 +744,24 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
+                if (contact.unreadCount > 0)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[600],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${contact.unreadCount}',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 4),
                 Text(
                   _formatLastMessageTime(contact.lastMessageTime),
                   style: GoogleFonts.poppins(
