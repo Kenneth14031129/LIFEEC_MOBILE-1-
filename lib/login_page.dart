@@ -7,7 +7,6 @@ import 'dashboard.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-import 'residents_list.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});

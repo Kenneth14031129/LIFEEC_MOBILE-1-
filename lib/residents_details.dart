@@ -105,23 +105,30 @@ class _ResidentDetailsState extends State<ResidentDetails> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+
         setState(() {
           healthData = {
             'id': data['_id'],
-            'allergies': data['allergies'] ?? 'None',
-            'medications': [
-              {
-                'medication': data['medications'] ?? 'None',
-                'dosage': data['dosage'] ?? 'Not specified',
-                'quantity': data['quantity'] ?? 'Not specified',
-                'time': [data['medicationTime'] ?? 'Not specified'],
-                'status': data['isMedicationTaken'] ? 'Taken' : 'Not taken'
-              }
-            ],
-            'conditions': data['medicalCondition'] ?? 'None',
+            'allergies': List<String>.from(data['allergies'] ?? []),
+            'medications': (data['medications'] as List<dynamic>?)
+                    ?.map((med) => {
+                          'medication': med['name'] ??
+                              '', // Changed from med['medication'] to med['name']
+                          'dosage': med['dosage'] ?? '',
+                          'quantity': med['quantity'] ?? '',
+                          'time': med['medicationTime'] != null
+                              ? [med['medicationTime']]
+                              : [], // Use medicationTime
+                          'status': med['isMedicationTaken']
+                              ? 'Taken'
+                              : 'Not taken' // Use isMedicationTaken for status
+                        })
+                    .toList() ??
+                [],
+            'conditions': List<String>.from(data['medicalCondition'] ?? []),
             'assessment': data['assessment'] ?? 'No assessment available',
             'instructions': data['instructions'] ?? 'No special instructions',
-            'status': data['status'] ?? 'Active',
+            'status': data['status'] ?? 'Stable',
             'date': data['date'] ?? 'Not specified',
           };
         });
@@ -132,15 +139,14 @@ class _ResidentDetailsState extends State<ResidentDetails> {
       if (kDebugMode) {
         print('Error fetching health data: $e');
       }
-      // Set default health data in case of error
       setState(() {
         healthData = {
-          'allergies': 'None',
+          'allergies': <String>[],
           'medications': [],
-          'conditions': 'None',
+          'conditions': <String>[],
           'assessment': 'No assessment available',
           'instructions': 'No special instructions',
-          'status': 'Active',
+          'status': 'Stable',
           'date': 'Not specified',
         };
       });
@@ -153,37 +159,25 @@ class _ResidentDetailsState extends State<ResidentDetails> {
         throw Exception('Health plan ID not found');
       }
 
-      // Transform the data to match backend expectations
-      final medication = updatedData['medications']?.isNotEmpty == true
-          ? updatedData['medications'][0]
-          : null;
-
-      // Ensure status is a valid enum value
-      String status = updatedData['status'] ?? 'Stable';
-      if (status != 'Critical' && status != 'Stable') {
-        status = 'Stable'; // Default to 'Stable' if invalid value
-      }
-
-      // Create the request body
+      // Create the request body with proper array handling
       final requestBody = {
-        'status': status,
-        // Join arrays into comma-separated strings
-        'allergies': updatedData['allergies']?.join(', ') ?? '',
-        'medicalCondition': updatedData['conditions']?.join(', ') ?? '',
-        // Extract medication details
-        'medications': medication?['medication'] ?? '',
-        'dosage': medication?['dosage'] ?? '',
-        'quantity': medication?['quantity'] ?? '',
-        'medicationTime': medication?['time'] is List
-            ? medication['time'].join(', ')
-            : medication?['time'] ?? '',
-        'isMedicationTaken': medication?['status'] == 'Taken',
-        // Map assessment fields
+        'status': updatedData['status'] ?? 'Stable',
+        'allergies': updatedData['allergies'] ?? [], // Keep as array
+        'medicalCondition': updatedData['conditions'] ?? [], // Keep as array
+        'medications': updatedData['medications']
+                ?.map((med) => ({
+                      'medication': med['medication'],
+                      'dosage': med['dosage'],
+                      'quantity': med['quantity'],
+                      'time': med['time'],
+                      'status': med['status']
+                    }))
+                .toList() ??
+            [], // Keep as array of medication objects
         'assessment': updatedData['assessmentNotes'] ?? '',
         'instructions': updatedData['specialInstructions'] ?? ''
       };
 
-      // Log the request for debugging
       if (kDebugMode) {
         print('Updating health plan with data: $requestBody');
       }
@@ -219,7 +213,6 @@ class _ResidentDetailsState extends State<ResidentDetails> {
       if (kDebugMode) {
         print('Error updating health plan: $e');
       }
-      // Show error message to user
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -579,7 +572,7 @@ class _ResidentDetailsState extends State<ResidentDetails> {
                 Text(
                   residentData['name'] ?? 'Unknown',
                   style: GoogleFonts.poppins(
-                    fontSize: 24,
+                    fontSize: 22,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
@@ -798,91 +791,252 @@ class _ResidentDetailsState extends State<ResidentDetails> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 12),
-        _buildInfoRow(
-          'Allergies:',
-          healthData['allergies']?.toString() ?? 'None',
+        // Allergies Section
+        Text(
+          'Allergies',
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.blue[800],
+          ),
         ),
-        _buildInfoRow(
-          'Medical Conditions:',
-          healthData['conditions']?.toString() ?? 'None',
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: (healthData['allergies'] as List<String>).isEmpty
+              ? [
+                  Chip(
+                    label: Text(
+                      'No Allergies',
+                      style: GoogleFonts.poppins(color: Colors.grey[600]),
+                    ),
+                    backgroundColor: Colors.grey[100],
+                  )
+                ]
+              : (healthData['allergies'] as List<String>).map((allergy) {
+                  return Chip(
+                    label: Text(
+                      allergy,
+                      style: GoogleFonts.poppins(color: Colors.red[700]),
+                    ),
+                    backgroundColor: Colors.red[50],
+                  );
+                }).toList(),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Medical Conditions Section
+        Text(
+          'Medical Conditions',
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.blue[800],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: (healthData['conditions'] as List<String>).isEmpty
+              ? [
+                  Chip(
+                    label: Text(
+                      'No Medical Conditions',
+                      style: GoogleFonts.poppins(color: Colors.grey[600]),
+                    ),
+                    backgroundColor: Colors.grey[100],
+                  )
+                ]
+              : (healthData['conditions'] as List<String>).map((condition) {
+                  return Chip(
+                    label: Text(
+                      condition,
+                      style: GoogleFonts.poppins(color: Colors.red[700]),
+                    ),
+                    backgroundColor: Colors.red[50],
+                  );
+                }).toList(),
         ),
       ],
     );
   }
 
   Widget _buildMedications() {
-    final medications = healthData['medications'] as List? ?? [];
+    final medications = healthData['medications'] as List<Map<String, dynamic>>;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Update this Row to prevent overflow
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              // Add Expanded here
-              child: Text(
-                'Medication Details',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            Text(
-              healthData['date'] ?? 'Not specified',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
-            ),
-          ],
+        Text(
+          'Medication Details',
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.blue[800],
+          ),
+        ),
+        Text(
+          healthData['date'] ?? 'Not specified',
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            color: Colors.grey[600],
+          ),
         ),
         const SizedBox(height: 12),
         if (medications.isEmpty)
-          Text(
-            'No medications prescribed',
-            style: GoogleFonts.poppins(
-              color: Colors.grey[600],
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Icon(Icons.medication_outlined,
+                      color: Colors.grey[400], size: 24),
+                  const SizedBox(width: 12),
+                  Text(
+                    'No medications prescribed',
+                    style: GoogleFonts.poppins(color: Colors.grey[600]),
+                  ),
+                ],
+              ),
             ),
           )
         else
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: medications.length,
-            itemBuilder: (context, index) {
-              final medication = medications[index];
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                shape: RoundedRectangleBorder(
+          ...medications.map((medication) {
+            final isTaken = medication['status'] == 'Taken';
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(
+                  color: isTaken ? Colors.green.shade200 : Colors.grey.shade200,
+                  width: 1,
+                ),
+              ),
+              child: Container(
+                decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.transparent,
+                  ),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildInfoRow('Medication:', medication['medication']),
-                      _buildInfoRow('Dosage:', medication['dosage']),
-                      _buildInfoRow('Quantity:', medication['quantity']),
-                      _buildInfoRow(
-                        'Time:',
-                        (medication['time'] as List?)
-                                ?.map((time) =>
-                                    _formatTimeToStandard(time.toString()))
-                                .join(', ') ??
-                            'Not specified',
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.blue[50],
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Icons.medication,
+                              color: Colors.blue[700],
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  medication['medication'] ??
+                                      'Unknown Medication',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.blue[800],
+                                  ),
+                                ),
+                                Text(
+                                  '${medication['dosage']} • ${medication['quantity']} unit(s)',
+                                  style: GoogleFonts.poppins(
+                                    color: Colors.grey[600],
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isTaken
+                                  ? Colors.green[50]
+                                  : Colors.orange[50],
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              medication['status'] ?? 'Not taken',
+                              style: GoogleFonts.poppins(
+                                color: isTaken
+                                    ? Colors.green[700]
+                                    : Colors.orange[700],
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      _buildInfoRow('Status:', medication['status']),
+                      const Divider(height: 24),
+                      Text(
+                        'Schedule',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: (medication['time'] as List).map((time) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.blue[50],
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.access_time,
+                                    size: 16, color: Colors.blue[700]),
+                                const SizedBox(width: 4),
+                                Text(
+                                  _formatTimeToStandard(time.toString()),
+                                  style: GoogleFonts.poppins(
+                                    color: Colors.blue[700],
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
                     ],
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          }),
       ],
     );
   }
@@ -896,16 +1050,109 @@ class _ResidentDetailsState extends State<ResidentDetails> {
           style: GoogleFonts.poppins(
             fontSize: 16,
             fontWeight: FontWeight.w600,
+            color: Colors.blue[800],
           ),
         ),
         const SizedBox(height: 12),
-        _buildInfoRow(
-          'Assessment Notes:',
-          healthData['assessment'] ?? 'No specific notes at this time.',
-        ),
-        _buildInfoRow(
-          'Special Instructions:',
-          healthData['instructions'] ?? 'No special instructions at this time.',
+        Card(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: Colors.grey.shade200),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // Assessment Notes Section
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.blue[50],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.assessment_outlined,
+                        color: Colors.blue[700],
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Assessment Notes',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.blue[800],
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            healthData['assessment'] ??
+                                'No specific notes at this time.',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: Colors.grey[800],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const Divider(height: 32),
+                // Special Instructions Section
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.blue[50],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.assignment_outlined,
+                        color: Colors.blue[700],
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Special Instructions',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.blue[800],
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            healthData['instructions'] ??
+                                'No special instructions at this time.',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: Colors.grey[800],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ),
       ],
     );
