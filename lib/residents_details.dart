@@ -226,7 +226,6 @@ class _ResidentDetailsState extends State<ResidentDetails> {
 // Update the _fetchMealData method
   Future<void> _fetchMealData() async {
     try {
-      // Change the endpoint to get the latest meal record
       final response = await http.get(
         Uri.parse(
             'http://localhost:5001/api/meals/resident/${widget.residentId}/latest'),
@@ -234,18 +233,16 @@ class _ResidentDetailsState extends State<ResidentDetails> {
       );
 
       if (response.statusCode == 200) {
-        final meal =
-            json.decode(response.body); // Now it's a single object, not a list
+        final meal = json.decode(response.body);
         setState(() {
           meals = [
-            // Wrap single meal in a list since UI expects a list
             {
               'id': meal['_id'],
               'date': meal['date'] ?? 'Not specified',
-              'breakfast': meal['breakfast'] ?? 'Not specified',
-              'lunch': meal['lunch'] ?? 'Not specified',
-              'snacks': meal['snacks'] ?? 'Not specified',
-              'dinner': meal['dinner'] ?? 'Not specified',
+              'breakfast': List<String>.from(meal['breakfast'] ?? []),
+              'lunch': List<String>.from(meal['lunch'] ?? []),
+              'snacks': List<String>.from(meal['snacks'] ?? []),
+              'dinner': List<String>.from(meal['dinner'] ?? []),
               'dietary needs': meal['dietaryNeeds'] ?? 'None specified',
               'nutritional goals': meal['nutritionalGoals'] ?? 'None specified',
               'completed': false
@@ -253,7 +250,6 @@ class _ResidentDetailsState extends State<ResidentDetails> {
           ];
         });
       } else if (response.statusCode == 404) {
-        // Handle case when no meals exist
         setState(() {
           meals = [];
         });
@@ -276,18 +272,27 @@ class _ResidentDetailsState extends State<ResidentDetails> {
         throw Exception('No meal record ID found to update');
       }
 
+      // Create request body with array handling
+      final requestBody = {
+        'date': updatedData['date'],
+        'breakfast': List<String>.from(updatedData['breakfast'] ?? []),
+        'lunch': List<String>.from(updatedData['lunch'] ?? []),
+        'dinner': List<String>.from(updatedData['dinner'] ?? []),
+        'snacks': List<String>.from(updatedData['snacks'] ?? []),
+        'dietaryNeeds': updatedData['dietary needs'],
+        'nutritionalGoals': updatedData['nutritional goals']
+      };
+
+      if (kDebugMode) {
+        print('Updating meal plan with data: $requestBody');
+      }
+
       final response = await http.put(
         Uri.parse('http://localhost:5001/api/meals/${meals[0]['id']}'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'date': updatedData['date'],
-          'breakfast': updatedData['breakfast'],
-          'lunch': updatedData['lunch'],
-          'dinner': updatedData['dinner'],
-          'snacks': updatedData['snacks'],
-          'dietaryNeeds': updatedData['dietary needs'],
-          'nutritionalGoals': updatedData['nutritional goals']
-        }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(requestBody),
       );
 
       if (response.statusCode == 200) {
@@ -302,6 +307,9 @@ class _ResidentDetailsState extends State<ResidentDetails> {
           await _fetchMealData();
         }
       } else {
+        if (kDebugMode) {
+          print('Server response: ${response.body}');
+        }
         throw Exception('Failed to update meal plan: ${response.statusCode}');
       }
     } catch (e) {
@@ -1280,7 +1288,14 @@ class _ResidentDetailsState extends State<ResidentDetails> {
     );
   }
 
-  Widget _buildMealTime(String time, String? meal) {
+  Widget _buildMealTime(String time, dynamic mealItems) {
+    List<String> items = [];
+    if (mealItems is List) {
+      items = List<String>.from(mealItems);
+    } else if (mealItems != null) {
+      items = [mealItems.toString()];
+    }
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -1298,13 +1313,37 @@ class _ResidentDetailsState extends State<ResidentDetails> {
             ),
           ),
           Expanded(
-            child: Text(
-              meal ?? 'Not specified',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                color: Colors.grey[800],
-              ),
-            ),
+            child: items.isEmpty
+                ? Text(
+                    'Not specified',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: Colors.grey[800],
+                    ),
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: items.map((item) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('• ', style: TextStyle(fontSize: 14)),
+                            Expanded(
+                              child: Text(
+                                item,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  color: Colors.grey[800],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
           ),
         ],
       ),

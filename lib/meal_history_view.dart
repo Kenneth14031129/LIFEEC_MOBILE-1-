@@ -50,10 +50,10 @@ class _MealHistoryViewState extends State<MealHistoryView> {
               .map((record) => {
                     'id': record['_id'],
                     'date': record['date'],
-                    'breakfast': record['breakfast'],
-                    'lunch': record['lunch'],
-                    'dinner': record['dinner'],
-                    'snacks': record['snacks'],
+                    'breakfast': List<String>.from(record['breakfast'] ?? []),
+                    'lunch': List<String>.from(record['lunch'] ?? []),
+                    'dinner': List<String>.from(record['dinner'] ?? []),
+                    'snacks': List<String>.from(record['snacks'] ?? []),
                     'dietaryNeeds': record['dietaryNeeds'],
                     'nutritionalGoals': record['nutritionalGoals'],
                     'createdAt': record['createdAt'],
@@ -315,7 +315,14 @@ class _MealHistoryViewState extends State<MealHistoryView> {
     );
   }
 
-  Widget _buildMealSection(String title, String? content) {
+  Widget _buildMealSection(String title, dynamic content) {
+    List<String> items = [];
+    if (content is List) {
+      items = List<String>.from(content);
+    } else if (content != null) {
+      items = [content.toString()];
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -328,13 +335,38 @@ class _MealHistoryViewState extends State<MealHistoryView> {
           ),
         ),
         const SizedBox(height: 8),
-        Text(
-          content ?? 'Not specified',
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            color: Colors.grey[800],
+        if (items.isEmpty)
+          Text(
+            'Not specified',
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              color: Colors.grey[800],
+            ),
+          )
+        else
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: items.map((item) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('• ', style: TextStyle(fontSize: 14)),
+                    Expanded(
+                      child: Text(
+                        item,
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          color: Colors.grey[800],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
           ),
-        ),
         const SizedBox(height: 8),
       ],
     );

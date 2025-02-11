@@ -19,25 +19,25 @@ const mealRecordSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  breakfast: {
+  breakfast: [{
     type: String,
     required: true
-  },
-  lunch: {
+  }],
+  lunch: [{
     type: String,
     required: true
-  },
-  snacks: {
+  }],
+  snacks: [{
     type: String,
     required: true
-  },
-  dinner: {
+  }],
+  dinner: [{
     type: String,
     required: true
-  }
+  }]
 }, {
   timestamps: true,
-  collection: 'mealrecords' // Explicitly set collection name
+  collection: 'mealrecords'
 });
 
 const MealRecord = mongoose.model('MealRecord', mealRecordSchema);

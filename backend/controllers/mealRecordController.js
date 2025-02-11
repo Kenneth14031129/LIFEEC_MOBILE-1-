@@ -35,10 +35,10 @@ const mealRecordController = {
         dietaryNeeds: req.body.dietaryNeeds,
         nutritionalGoals: req.body.nutritionalGoals,
         date: req.body.date,
-        breakfast: req.body.breakfast,
-        lunch: req.body.lunch,
-        snacks: req.body.snacks,
-        dinner: req.body.dinner
+        breakfast: Array.isArray(req.body.breakfast) ? req.body.breakfast : [req.body.breakfast],
+        lunch: Array.isArray(req.body.lunch) ? req.body.lunch : [req.body.lunch],
+        snacks: Array.isArray(req.body.snacks) ? req.body.snacks : [req.body.snacks],
+        dinner: Array.isArray(req.body.dinner) ? req.body.dinner : [req.body.dinner]
       });
 
       const savedMealRecord = await newMealRecord.save();
@@ -48,7 +48,6 @@ const mealRecordController = {
     }
   },
 
-  // Update a meal record
   updateMealRecord: async (req, res) => {
     try {
       const updatedMealRecord = await MealRecord.findByIdAndUpdate(
@@ -57,12 +56,12 @@ const mealRecordController = {
           dietaryNeeds: req.body.dietaryNeeds,
           nutritionalGoals: req.body.nutritionalGoals,
           date: req.body.date,
-          breakfast: req.body.breakfast,
-          lunch: req.body.lunch,
-          snacks: req.body.snacks,
-          dinner: req.body.dinner
+          breakfast: Array.isArray(req.body.breakfast) ? req.body.breakfast : [req.body.breakfast],
+          lunch: Array.isArray(req.body.lunch) ? req.body.lunch : [req.body.lunch],
+          snacks: Array.isArray(req.body.snacks) ? req.body.snacks : [req.body.snacks],
+          dinner: Array.isArray(req.body.dinner) ? req.body.dinner : [req.body.dinner]
         },
-        { new: true } // Return updated document
+        { new: true }
       );
 
       if (!updatedMealRecord) {
