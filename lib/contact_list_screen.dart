@@ -228,8 +228,10 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
                         entry.key == 'Relative')
                     .map((entry) {
                   List<Contact> contacts = (entry.value as List)
-                      // Filter out the current user
-                      .where((contact) => contact['userId'] != userId)
+                      // Filter out archived users and current user
+                      .where((contact) =>
+                          contact['userId'] != userId &&
+                          !(contact['isArchived'] ?? false))
                       .map((contact) => Contact(
                             name: contact['name'],
                             role: contact['role'],
@@ -250,19 +252,18 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
                   return contacts.isNotEmpty
                       ? MapEntry(entry.key, contacts)
                       : null;
-                }).whereType<
-                        MapEntry<String,
-                            List<Contact>>>(), // Remove null entries
+                }).whereType<MapEntry<String, List<Contact>>>(),
               );
             } else if (userRole.toLowerCase() == 'relative' ||
                 userRole.toLowerCase() == 'nutritionist') {
-              // Only show Nurse and Admin contacts for relatives and nutritionists
+              // Only show non-archived Nurse and Admin contacts for relatives and nutritionists
               _groupedContacts = Map.fromEntries(
                 contactsData.entries
                     .where(
                         (entry) => entry.key == 'Nurse' || entry.key == 'Admin')
                     .map((entry) {
                   List<Contact> contacts = (entry.value as List)
+                      .where((contact) => !(contact['isArchived'] ?? false))
                       .map((contact) => Contact(
                             name: contact['name'],
                             role: contact['role'],
@@ -283,9 +284,10 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
                 }),
               );
             } else {
-              // Show all contacts for other users
+              // Show all non-archived contacts for other users
               _groupedContacts = contactsData.map((key, value) {
                 List<Contact> contacts = (value as List)
+                    .where((contact) => !(contact['isArchived'] ?? false))
                     .map((contact) => Contact(
                           name: contact['name'],
                           role: contact['role'],

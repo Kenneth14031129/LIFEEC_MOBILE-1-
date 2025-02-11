@@ -278,12 +278,13 @@ exports.getContactsList = async (req, res) => {
       });
     }
 
-    // Get all users with specified roles
+    // Get all non-archived users with specified roles
     const users = await User.find({
       userType: {
         $in: ["admin", "nurse", "nutritionist", "relative"],
       },
-    }).select("fullName userType email phone createdAt");
+      isArchived: { $ne: true } // Exclude archived users
+    }).select("fullName userType email phone createdAt isArchived");
 
     // Get last messages and unread counts for each conversation
     const conversationStats = await Message.aggregate([
@@ -345,7 +346,10 @@ exports.getContactsList = async (req, res) => {
 
     // Transform the data to match the contact list format
     const contacts = users
-      .filter((user) => user._id.toString() !== currentUserId) // Exclude current user
+      .filter((user) => 
+        user._id.toString() !== currentUserId &&  // Exclude current user
+        !user.isArchived  // Double-check to exclude archived users
+      )
       .map((user) => {
         const stats = statsMap.get(user._id.toString()) || {};
 
@@ -358,11 +362,12 @@ exports.getContactsList = async (req, res) => {
           lastMessageTime: stats.lastMessage
             ? stats.lastMessage.timestamp
             : user.createdAt,
-          isOnline: false, // You can implement online status logic here
+          isOnline: false,
           email: user.email,
           phone: user.phone,
           userId: user._id,
           unreadCount: stats.unreadCount || 0,
+          isArchived: user.isArchived || false
         };
       });
 
