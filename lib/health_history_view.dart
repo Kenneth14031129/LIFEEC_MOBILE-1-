@@ -51,13 +51,20 @@ class _HealthHistoryViewState extends State<HealthHistoryView> {
                     'id': record['_id'],
                     'date': record['date'],
                     'status': record['status'],
-                    'allergies': record['allergies'],
-                    'medicalCondition': record['medicalCondition'],
-                    'medications': record['medications'],
-                    'dosage': record['dosage'],
-                    'quantity': record['quantity'],
-                    'medicationTime': record['medicationTime'],
-                    'isMedicationTaken': record['isMedicationTaken'],
+                    'allergies': record['allergies'] ?? [],
+                    'medicalCondition': record['medicalCondition'] ?? [],
+                    'medications': (record['medications'] as List?)
+                            ?.map((med) => {
+                                  'medication': med['name'],
+                                  'dosage': med['dosage'],
+                                  'quantity': med['quantity'],
+                                  'time': med['medicationTime'],
+                                  'status': med['isMedicationTaken']
+                                      ? 'Taken'
+                                      : 'Not taken'
+                                })
+                            .toList() ??
+                        [],
                     'assessment': record['assessment'],
                     'instructions': record['instructions'],
                     'createdAt': record['createdAt'],
@@ -319,19 +326,27 @@ class _HealthHistoryViewState extends State<HealthHistoryView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildSection('Medical Information', [
-                  _buildInfoRow('Allergies:', record['allergies']),
-                  _buildInfoRow(
-                      'Medical Condition:', record['medicalCondition']),
+                  _buildAllergiesSection(record['allergies']),
+                  _buildMedicalConditionsSection(record['medicalCondition']),
                 ]),
                 const SizedBox(height: 16),
                 _buildSection('Medication Details', [
-                  _buildInfoRow('Medication:', record['medications']),
-                  _buildInfoRow('Dosage:', record['dosage']),
-                  _buildInfoRow('Quantity:', record['quantity']),
-                  _buildInfoRow(
-                      'Time:', _formatMedicationTime(record['medicationTime'])),
-                  _buildInfoRow('Status:',
-                      record['isMedicationTaken'] ? 'Taken' : 'Not Taken'),
+                  ...record['medications']
+                      .map<Widget>((medication) => Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildInfoRow(
+                                  'Medication:', medication['medication']),
+                              _buildInfoRow('Dosage:', medication['dosage']),
+                              _buildInfoRow(
+                                  'Quantity:', medication['quantity']),
+                              _buildInfoRow('Time:',
+                                  _formatMedicationTime(medication['time'])),
+                              _buildInfoRow('Status:', medication['status']),
+                              const Divider(),
+                            ],
+                          ))
+                      .toList(),
                 ]),
                 const SizedBox(height: 16),
                 _buildSection('Assessment & Instructions', [
@@ -355,6 +370,66 @@ class _HealthHistoryViewState extends State<HealthHistoryView> {
         ],
       ),
     );
+  }
+
+  Widget _buildAllergiesSection(List<dynamic> allergies) {
+    return allergies.isEmpty
+        ? _buildInfoRow('Allergies:', 'None')
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Allergies:',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+              ),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: allergies
+                    .map((allergy) => Chip(
+                          label: Text(
+                            allergy,
+                            style: GoogleFonts.poppins(color: Colors.red[700]),
+                          ),
+                          backgroundColor: Colors.red[50],
+                        ))
+                    .toList(),
+              ),
+            ],
+          );
+  }
+
+  Widget _buildMedicalConditionsSection(List<dynamic> conditions) {
+    return conditions.isEmpty
+        ? _buildInfoRow('Medical Conditions:', 'None')
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Medical Conditions:',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+              ),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: conditions
+                    .map((condition) => Chip(
+                          label: Text(
+                            condition,
+                            style: GoogleFonts.poppins(color: Colors.red[700]),
+                          ),
+                          backgroundColor: Colors.red[50],
+                        ))
+                    .toList(),
+              ),
+            ],
+          );
   }
 
   Widget _buildSection(String title, List<Widget> children) {

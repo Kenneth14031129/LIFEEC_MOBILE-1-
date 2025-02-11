@@ -563,13 +563,6 @@ class _HealthUpdateModalState extends State<HealthUpdateModal> {
                           },
                           activeColor: Colors.blue[600],
                         ),
-                        Text(
-                          'Medication has been taken',
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            color: Colors.grey[700],
-                          ),
-                        ),
                       ],
                     ),
                   ],
