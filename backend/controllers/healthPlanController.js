@@ -76,11 +76,13 @@ const healthPlanController = {
         status: req.body.status,
         allergies: req.body.allergies,
         medicalCondition: req.body.medicalCondition,
-        medications: req.body.medications,
-        dosage: req.body.dosage,
-        quantity: req.body.quantity,
-        medicationTime: req.body.medicationTime,
-        isMedicationTaken: req.body.isMedicationTaken,
+        medications: req.body.medications.map((med) => ({
+          name: med.name,
+          dosage: med.dosage,
+          quantity: med.quantity,
+          medicationTime: med.medicationTime,
+          isMedicationTaken: med.isMedicationTaken,
+        })),
         assessment: req.body.assessment,
         instructions: req.body.instructions,
       });
@@ -95,13 +97,13 @@ const healthPlanController = {
   // Update health plan
   updateHealthPlan: async (req, res) => {
     try {
+      console.log("Incoming update data:", req.body);
       const healthPlan = await HealthPlan.findById(req.params.id);
 
       if (!healthPlan) {
         return res.status(404).json({ message: "Health plan not found" });
       }
 
-      // Process arrays properly for update
       const updateData = {
         ...req.body,
         allergies: Array.isArray(req.body.allergies)
@@ -112,21 +114,13 @@ const healthPlanController = {
           : req.body.medicalCondition?.split(",").map((item) => item.trim()),
         medications: Array.isArray(req.body.medications)
           ? req.body.medications.map((med) => ({
-              medication: med.medication,
+              name: med.name,
               dosage: med.dosage,
               quantity: med.quantity,
-              time: Array.isArray(med.time) ? med.time : [med.time],
-              status: med.status || "Not taken",
+              medicationTime: med.medicationTime,
+              isMedicationTaken: med.isMedicationTaken,
             }))
-          : [
-              {
-                medication: req.body.medications,
-                dosage: req.body.dosage,
-                quantity: req.body.quantity,
-                time: [req.body.medicationTime],
-                status: req.body.isMedicationTaken ? "Taken" : "Not taken",
-              },
-            ],
+          : [],
       };
 
       Object.assign(healthPlan, updateData);

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -210,13 +211,17 @@ class _HealthUpdateModalState extends State<HealthUpdateModal> {
     if (widget.currentHealthData['medications'] is List) {
       medications = List<Map<String, dynamic>>.from(
         widget.currentHealthData['medications'].map((med) => {
-              'medication': med['medication'] ?? '',
+              'medication':
+                  med['medication'] ?? '', // This will be the 'name' field
               'dosage': med['dosage'] ?? '',
               'quantity': med['quantity'] ?? '',
-              'time': med['time'] ?? '',
-              'status': med['status'] ?? 'Not taken',
-              'medicationController':
-                  TextEditingController(text: med['medication'] ?? ''),
+              'time': med['time'] ??
+                  med['medicationTime'] ??
+                  '', // Handle both old and new format
+              'status':
+                  med['isMedicationTaken'] == true ? 'Taken' : 'Not taken',
+              'medicationController': TextEditingController(
+                  text: med['medication'] ?? med['name'] ?? ''),
               'dosageController':
                   TextEditingController(text: med['dosage'] ?? ''),
               'quantityController':
@@ -560,12 +565,15 @@ class _HealthUpdateModalState extends State<HealthUpdateModal> {
         const SizedBox(height: 4),
         if (isTimeField)
           CustomTimePicker(
-            initialTime: initialValue,
-            onTimeSelected: onChanged,
+            initialTime:
+                initialValue, // Remove the List check since we now store as string
+            onTimeSelected: (value) {
+              onChanged(value); // This will be stored directly as a string
+            },
           )
         else
           TextField(
-            controller: controller, // Use the passed controller
+            controller: controller,
             onChanged: onChanged,
             decoration: InputDecoration(
               contentPadding: const EdgeInsets.symmetric(
@@ -734,22 +742,23 @@ class _HealthUpdateModalState extends State<HealthUpdateModal> {
                       .toList(),
                   'medications': medications
                       .map((med) => {
-                            'medication': med['medication'],
-                            'dosage': med['dosage'],
-                            'quantity': med['quantity'],
-                            'time': med['time'] is List
-                                ? med['time']
-                                : med['time']
-                                    .toString()
-                                    .split(',')
-                                    .map((e) => e.trim())
-                                    .toList(),
-                            'status': med['status']
+                            'name': med['medicationController'].text,
+                            'dosage': med['dosageController'].text,
+                            'quantity': med['quantityController'].text,
+                            'medicationTime': med['time'] is List
+                                ? med['time'][0]
+                                : med['time'], // Convert array to single string
+                            'isMedicationTaken': med['status'] == 'Taken'
                           })
                       .toList(),
                   'assessmentNotes': _assessmentNotesController.text,
                   'specialInstructions': _specialInstructionsController.text,
                 };
+
+                if (kDebugMode) {
+                  print('Sending updated data: $updatedHealthData');
+                }
+
                 Navigator.pop(context, updatedHealthData);
               },
               style: TextButton.styleFrom(

@@ -112,16 +112,12 @@ class _ResidentDetailsState extends State<ResidentDetails> {
             'allergies': List<String>.from(data['allergies'] ?? []),
             'medications': (data['medications'] as List<dynamic>?)
                     ?.map((med) => {
-                          'medication': med['name'] ??
-                              '', // Changed from med['medication'] to med['name']
+                          'medication': med['name'] ?? '',
                           'dosage': med['dosage'] ?? '',
                           'quantity': med['quantity'] ?? '',
-                          'time': med['medicationTime'] != null
-                              ? [med['medicationTime']]
-                              : [], // Use medicationTime
-                          'status': med['isMedicationTaken']
-                              ? 'Taken'
-                              : 'Not taken' // Use isMedicationTaken for status
+                          'time': med['medicationTime'] ?? '',
+                          'status':
+                              med['isMedicationTaken'] ? 'Taken' : 'Not taken'
                         })
                     .toList() ??
                 [],
@@ -161,19 +157,22 @@ class _ResidentDetailsState extends State<ResidentDetails> {
 
       // Create the request body with proper array handling
       final requestBody = {
+        'date': DateTime.now().toIso8601String().split('T')[0],
         'status': updatedData['status'] ?? 'Stable',
-        'allergies': updatedData['allergies'] ?? [], // Keep as array
-        'medicalCondition': updatedData['conditions'] ?? [], // Keep as array
+        'allergies': updatedData['allergies'] ?? [],
+        'medicalCondition': updatedData['conditions'] ?? [],
         'medications': updatedData['medications']
-                ?.map((med) => ({
-                      'medication': med['medication'],
+                ?.map((med) => {
+                      'name': med['name'],
                       'dosage': med['dosage'],
                       'quantity': med['quantity'],
-                      'time': med['time'],
-                      'status': med['status']
-                    }))
+                      'medicationTime': med['medicationTime'] is List
+                          ? med['medicationTime'][0]
+                          : med['medicationTime'], // Ensure it's a string
+                      'isMedicationTaken': med['isMedicationTaken']
+                    })
                 .toList() ??
-            [], // Keep as array of medication objects
+            [],
         'assessment': updatedData['assessmentNotes'] ?? '',
         'instructions': updatedData['specialInstructions'] ?? ''
       };
@@ -1002,8 +1001,8 @@ class _ResidentDetailsState extends State<ResidentDetails> {
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children: (medication['time'] as List).map((time) {
-                          return Container(
+                        children: [
+                          Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 12,
                               vertical: 6,
@@ -1019,7 +1018,8 @@ class _ResidentDetailsState extends State<ResidentDetails> {
                                     size: 16, color: Colors.blue[700]),
                                 const SizedBox(width: 4),
                                 Text(
-                                  _formatTimeToStandard(time.toString()),
+                                  _formatTimeToStandard(
+                                      medication['time'].toString()),
                                   style: GoogleFonts.poppins(
                                     color: Colors.blue[700],
                                     fontSize: 12,
@@ -1028,8 +1028,8 @@ class _ResidentDetailsState extends State<ResidentDetails> {
                                 ),
                               ],
                             ),
-                          );
-                        }).toList(),
+                          ),
+                        ],
                       ),
                     ],
                   ),

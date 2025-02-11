@@ -1,6 +1,20 @@
 const mongoose = require("mongoose");
 
-const healthPlanSchema = new mongoose.Schema(
+const medicationSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+  },
+  dosage: String,
+  quantity: String,
+  medicationTime: String,
+  isMedicationTaken: {
+    type: Boolean,
+    default: false,
+  },
+});
+
+const healthRecordSchema = new mongoose.Schema(
   {
     residentId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -13,7 +27,7 @@ const healthPlanSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["Critical", "Stable"],
+      enum: ["Stable", "Critical"],
       default: "Stable",
     },
     allergies: [
@@ -28,19 +42,7 @@ const healthPlanSchema = new mongoose.Schema(
         trim: true,
       },
     ],
-    medications: [
-      {
-        medication: String,
-        dosage: String,
-        quantity: String,
-        time: [String],
-        status: {
-          type: String,
-          enum: ["Taken", "Not taken"],
-          default: "Not taken",
-        },
-      },
-    ],
+    medications: [medicationSchema],
     assessment: String,
     instructions: String,
   },
@@ -50,5 +52,5 @@ const healthPlanSchema = new mongoose.Schema(
   }
 );
 
-const HealthPlan = mongoose.model("HealthPlan", healthPlanSchema);
-module.exports = HealthPlan;
+const HealthRecord = mongoose.model("HealthRecord", healthRecordSchema);
+module.exports = HealthRecord;
