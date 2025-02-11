@@ -7,7 +7,6 @@ import 'dashboard.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -131,19 +130,30 @@ class LoginPageState extends State<LoginPage>
           throw response['error'] ?? response['message'];
         }
 
+        // Check if user is archived
+        if (response['user']['isArchived'] == true) {
+          throw 'This account has been archived. Please contact your administrator.';
+        }
+
         // Check if user type is valid
         final userType = response['user']['userType'];
         if (!['nurse', 'nutritionist', 'relative'].contains(userType)) {
           throw 'Invalid user type. Access denied.';
         }
 
-        // Save user ID to SharedPreferences - Add this block
+        // Save user ID to SharedPreferences
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('userId', response['user']['id']);
         await prefs.setString('userRole', response['user']['userType']);
+        await prefs.setString('userEmail', response['user']['email']);
+        await prefs.setString('userName', response['user']['fullName']);
+
         if (kDebugMode) {
           print('Saved userId: ${response['user']['id']}');
-        } // Debug print
+          print('Saved userRole: ${response['user']['userType']}');
+          print('Saved userEmail: ${response['user']['email']}');
+          print('Saved userName: ${response['user']['fullName']}');
+        }
       } else {
         // Handle registration
         if (!['nurse', 'nutritionist', 'relative']
@@ -162,10 +172,37 @@ class LoginPageState extends State<LoginPage>
         if (response.containsKey('error') || response.containsKey('message')) {
           throw response['error'] ?? response['message'];
         }
+
+        // After successful registration, automatically save user data
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('userId', response['user']['id']);
+        await prefs.setString('userRole', response['user']['userType']);
+        await prefs.setString('userEmail', response['user']['email']);
+        await prefs.setString('userName', response['user']['fullName']);
+
+        if (kDebugMode) {
+          print('Saved new user data:');
+          print('userId: ${response['user']['id']}');
+          print('userRole: ${response['user']['userType']}');
+          print('userEmail: ${response['user']['email']}');
+          print('userName: ${response['user']['fullName']}');
+        }
       }
 
       if (mounted) {
-        // Successfully logged in or registered
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isLogin ? 'Successfully logged in!' : 'Successfully registered!',
+              style: GoogleFonts.poppins(color: Colors.white),
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+
+        // Navigate based on user role
         final userRole = response['user']['userType'].toString().toLowerCase();
         Navigator.pushReplacement(
           context,
@@ -174,7 +211,6 @@ class LoginPageState extends State<LoginPage>
               if (userRole == 'nurse') {
                 return const DashboardScreen();
               } else {
-                // Both nutritionists and relatives go to ContactsListScreen
                 return const ContactsListScreen();
               }
             },
@@ -185,6 +221,20 @@ class LoginPageState extends State<LoginPage>
       setState(() {
         _errorMessage = error.toString();
       });
+
+      // Show error snackbar
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              error.toString(),
+              style: GoogleFonts.poppins(color: Colors.white),
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {

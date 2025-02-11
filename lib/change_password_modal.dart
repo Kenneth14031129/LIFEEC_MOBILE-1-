@@ -83,7 +83,7 @@ class _ChangePasswordModalState extends State<ChangePasswordModal> {
                   Text(
                     'Change Password',
                     style: GoogleFonts.poppins(
-                      fontSize: 24,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
