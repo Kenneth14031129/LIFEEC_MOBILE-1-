@@ -251,6 +251,21 @@ class _HealthUpdateModalState extends State<HealthUpdateModal> {
     }
   }
 
+  void _addNewMedication() {
+    setState(() {
+      medications.add({
+        'medication': '',
+        'dosage': '',
+        'quantity': '',
+        'time': '',
+        'status': 'Not taken',
+        'medicationController': TextEditingController(),
+        'dosageController': TextEditingController(),
+        'quantityController': TextEditingController(),
+      });
+    });
+  }
+
   @override
   void dispose() {
     for (var medication in medications) {
@@ -424,124 +439,146 @@ class _HealthUpdateModalState extends State<HealthUpdateModal> {
   }
 
   Widget _buildMedicationsList() {
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: medications.length,
-      itemBuilder: (context, index) {
-        final medication = medications[index];
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Medication ${index + 1}',
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.red),
-                      onPressed: () {
-                        setState(() {
-                          medications.removeAt(index);
-                        });
-                      },
-                    ),
-                  ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            TextButton.icon(
+              onPressed: _addNewMedication,
+              icon: Icon(Icons.add_circle_outline, color: Colors.blue[600]),
+              label: Text(
+                'Add Medication',
+                style: GoogleFonts.poppins(
+                  color: Colors.blue[600],
+                  fontWeight: FontWeight.w500,
                 ),
-                const SizedBox(height: 12),
-                _buildMedicationField(
-                  'Medication',
-                  medication['medication'] ?? '',
-                  (value) {
-                    setState(() {
-                      medication['medication'] = value;
-                    });
-                  },
-                  controller: medication['medicationController'],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildMedicationField(
-                        'Dosage',
-                        medication['dosage'] ?? '',
-                        (value) {
-                          setState(() {
-                            medication['dosage'] = value;
-                          });
-                        },
-                        controller: medication['dosageController'],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildMedicationField(
-                        'Quantity',
-                        medication['quantity'] ?? '',
-                        (value) {
-                          setState(() {
-                            medication['quantity'] = value;
-                          });
-                        },
-                        controller: medication['quantityController'],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                _buildMedicationField(
-                  'Time',
-                  medication['time'] is List
-                      ? medication['time'].join(', ')
-                      : medication['time'] ?? '',
-                  (value) {
-                    setState(() {
-                      medication['time'] = [value];
-                    });
-                  },
-                  isTimeField: true,
-                ),
-                const SizedBox(height: 12),
-                // Add medication taken checkbox
-                Row(
-                  children: [
-                    Checkbox(
-                      value: medication['status'] == 'Taken',
-                      onChanged: (bool? value) {
-                        setState(() {
-                          medication['status'] =
-                              value == true ? 'Taken' : 'Not taken';
-                        });
-                      },
-                      activeColor: Colors.blue[600],
-                    ),
-                    Text(
-                      'Medication has been taken',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        color: Colors.grey[700],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+              ),
             ),
-          ),
-        );
-      },
+          ],
+        ),
+        const SizedBox(height: 12),
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: medications.length,
+          itemBuilder: (context, index) {
+            final medication = medications[index];
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Medication ${index + 1}',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline,
+                              color: Colors.red),
+                          onPressed: () {
+                            setState(() {
+                              medications.removeAt(index);
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _buildMedicationField(
+                      'Medication',
+                      medication['medication'] ?? '',
+                      (value) {
+                        setState(() {
+                          medication['medication'] = value;
+                        });
+                      },
+                      controller: medication['medicationController'],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildMedicationField(
+                            'Dosage',
+                            medication['dosage'] ?? '',
+                            (value) {
+                              setState(() {
+                                medication['dosage'] = value;
+                              });
+                            },
+                            controller: medication['dosageController'],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildMedicationField(
+                            'Quantity',
+                            medication['quantity'] ?? '',
+                            (value) {
+                              setState(() {
+                                medication['quantity'] = value;
+                              });
+                            },
+                            controller: medication['quantityController'],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    _buildMedicationField(
+                      'Time',
+                      medication['time'] is List
+                          ? medication['time'].join(', ')
+                          : medication['time'] ?? '',
+                      (value) {
+                        setState(() {
+                          medication['time'] = [value];
+                        });
+                      },
+                      isTimeField: true,
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: medication['status'] == 'Taken',
+                          onChanged: (bool? value) {
+                            setState(() {
+                              medication['status'] =
+                                  value == true ? 'Taken' : 'Not taken';
+                            });
+                          },
+                          activeColor: Colors.blue[600],
+                        ),
+                        Text(
+                          'Medication has been taken',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 
