@@ -22,16 +22,20 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.16.0'  # Using a more stable recent version
+          flutter-version: '3.16.8'  # This version includes Dart SDK 3.2.3
           channel: 'stable'
           cache: true
-          
-      - name: Check Flutter version
-        run: flutter --version
+      
+      - name: Check Flutter and Dart versions
+        run: |
+          flutter --version
+          dart --version
           
       - name: Install dependencies
-        run: flutter pub get
-          
+        run: |
+          dart pub get
+          flutter pub get
+        
       - name: Build Android APK
         run: flutter build apk --debug
         
