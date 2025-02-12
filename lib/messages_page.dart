@@ -59,7 +59,6 @@ class _MessagesPageState extends State<MessagesPage> {
   final ScrollController _scrollController = ScrollController();
   List<Message> _messages = [];
   String? _currentUserId;
-  bool _isLoading = true;
 
   @override
   void initState() {
@@ -104,7 +103,6 @@ class _MessagesPageState extends State<MessagesPage> {
             _messages = (data['messages'] as List)
                 .map((msg) => Message.fromJson(msg, _currentUserId!))
                 .toList();
-            _isLoading = false;
           });
 
           // Scroll to bottom after loading messages

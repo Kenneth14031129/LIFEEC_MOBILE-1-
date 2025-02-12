@@ -6,6 +6,7 @@ import 'contact_list_screen.dart';
 import 'dashboard.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -20,8 +21,6 @@ class LoginPageState extends State<LoginPage>
   bool showPassword = false;
   bool isLoading = false;
   late AnimationController _animationController;
-  late Animation<double> _slideAnimation;
-  late Animation<double> _fadeAnimation;
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -37,22 +36,6 @@ class LoginPageState extends State<LoginPage>
       vsync: this,
       duration: const Duration(milliseconds: 700),
     );
-
-    _slideAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
-
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeIn,
-    ));
   }
 
   @override
@@ -63,18 +46,6 @@ class LoginPageState extends State<LoginPage>
     _fullNameController.dispose();
     _phoneController.dispose();
     super.dispose();
-  }
-
-  void _toggleForm() {
-    setState(() {
-      isLogin = !isLogin;
-      _errorMessage = null;
-      if (isLogin) {
-        _animationController.reverse();
-      } else {
-        _animationController.forward();
-      }
-    });
   }
 
 // Add this function outside the class to handle the API response
@@ -341,9 +312,6 @@ class LoginPageState extends State<LoginPage>
                       // Submit Button
                       _buildSubmitButton(),
                       const SizedBox(height: 24),
-
-                      // Toggle Button
-                      _buildToggleButton(),
                     ],
                   ),
                 ),
@@ -358,25 +326,11 @@ class LoginPageState extends State<LoginPage>
   Widget _buildLogoAndTitle() {
     return Column(
       children: [
-        // Logo with cyan background
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.cyan[500]!.withOpacity(0.1),
-                Colors.blue[600]!.withOpacity(0.1),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Icon(
-            Icons.local_hospital_rounded,
-            size: 64,
-            color: Colors.cyan[500],
-          ),
+        // Just the SVG without container
+        SvgPicture.asset(
+          'assets/Health.svg',
+          width: 120,
+          height: 120,
         ),
         const SizedBox(height: 24),
         // Gradient Text for LIFEEC
@@ -392,7 +346,7 @@ class LoginPageState extends State<LoginPage>
             style: GoogleFonts.poppins(
               fontSize: 32,
               fontWeight: FontWeight.bold,
-              color: Colors.white, // The color will be masked by gradient
+              color: Colors.white,
               letterSpacing: 1.2,
             ),
           ),
@@ -474,7 +428,7 @@ class LoginPageState extends State<LoginPage>
             obscureText: !showPassword,
             suffixIcon: IconButton(
               icon: Icon(
-                showPassword ? Icons.visibility_off : Icons.visibility,
+                showPassword ? Icons.visibility : Icons.visibility_off,
                 size: 20,
               ),
               onPressed: () => setState(() => showPassword = !showPassword),
@@ -636,25 +590,6 @@ class LoginPageState extends State<LoginPage>
                     ),
                   ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildToggleButton() {
-    return TextButton(
-      onPressed: _toggleForm,
-      style: TextButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      ),
-      child: Text(
-        isLogin
-            ? 'Don\'t have an account? Sign Up'
-            : 'Already have an account? Sign In',
-        style: GoogleFonts.poppins(
-          color: Colors.cyan[700],
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
         ),
       ),
     );
