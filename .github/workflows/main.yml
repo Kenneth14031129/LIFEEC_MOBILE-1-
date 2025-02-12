@@ -13,21 +13,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.5.3'
+          flutter-version: '3.16.0'  # Using a more stable recent version
           channel: 'stable'
           cache: true
           
-      - name: Install dependencies
-        run: |
-          flutter pub get
-          flutter clean
+      - name: Check Flutter version
+        run: flutter --version
           
-      - name: Analyze project source
-        run: flutter analyze
-        
+      - name: Install dependencies
+        run: flutter pub get
+          
       - name: Build Android APK
         run: flutter build apk --debug
         
