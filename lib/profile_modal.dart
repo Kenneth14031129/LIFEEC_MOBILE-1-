@@ -65,7 +65,7 @@ class _ProfileModalState extends State<ProfileModal> {
   Future<void> _fetchUserProfile() async {
     try {
       final response = await http.get(
-        Uri.parse('http://localhost:5001/api/users/profile/${widget.userId}'),
+        Uri.parse('http://10.0.2.2:5001/api/users/profile/${widget.userId}'),
         headers: {'Content-Type': 'application/json'},
       );
 

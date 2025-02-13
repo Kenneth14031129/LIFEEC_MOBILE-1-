@@ -105,7 +105,7 @@ class _NotificationModalState extends State<NotificationModal> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://localhost:5001/api/emergency-alerts'),
+        Uri.parse('http://10.0.2.2:5001/api/emergency-alerts'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -167,7 +167,7 @@ class _NotificationModalState extends State<NotificationModal> {
 
     try {
       final response = await http.patch(
-        Uri.parse('http://localhost:5001/api/emergency-alerts/$alertId/read'),
+        Uri.parse('http://10.0.2.2:5001/api/emergency-alerts/$alertId/read'),
         headers: {'Content-Type': 'application/json'},
       );
 

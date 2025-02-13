@@ -34,7 +34,7 @@ class _ChangePasswordModalState extends State<ChangePasswordModal> {
     try {
       final response = await http.put(
         Uri.parse(
-            'http://localhost:5001/api/users/change-password/${widget.userId}'),
+            'http://10.0.2.2:5001/api/users/change-password/${widget.userId}'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'currentPassword': _currentPasswordController.text,

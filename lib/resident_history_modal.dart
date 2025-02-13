@@ -37,7 +37,7 @@ class _ResidentHistoryModalState extends State<ResidentHistoryModal> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://localhost:5001/api/residents/search'),
+        Uri.parse('http://10.0.2.2:5001/api/residents/search'),
         headers: {'Content-Type': 'application/json'},
       );
 

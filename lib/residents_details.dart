@@ -60,7 +60,7 @@ class _ResidentDetailsState extends State<ResidentDetails> {
   Future<void> _fetchResidentData() async {
     try {
       final response = await http.get(
-        Uri.parse('http://localhost:5001/api/residents/${widget.residentId}'),
+        Uri.parse('http://10.0.2.2:5001/api/residents/${widget.residentId}'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -99,7 +99,7 @@ class _ResidentDetailsState extends State<ResidentDetails> {
     try {
       final response = await http.get(
         Uri.parse(
-            'http://localhost:5001/api/healthplans/resident/${widget.residentId}'),
+            'http://10.0.2.2:5001/api/healthplans/resident/${widget.residentId}'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -182,7 +182,7 @@ class _ResidentDetailsState extends State<ResidentDetails> {
       }
 
       final response = await http.put(
-        Uri.parse('http://localhost:5001/api/healthplans/${healthData['id']}'),
+        Uri.parse('http://10.0.2.2:5001/api/healthplans/${healthData['id']}'),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -228,7 +228,7 @@ class _ResidentDetailsState extends State<ResidentDetails> {
     try {
       final response = await http.get(
         Uri.parse(
-            'http://localhost:5001/api/meals/resident/${widget.residentId}/latest'),
+            'http://10.0.2.2:5001/api/meals/resident/${widget.residentId}/latest'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -288,7 +288,7 @@ class _ResidentDetailsState extends State<ResidentDetails> {
       }
 
       final response = await http.put(
-        Uri.parse('http://localhost:5001/api/meals/${meals[0]['id']}'),
+        Uri.parse('http://10.0.2.2:5001/api/meals/${meals[0]['id']}'),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -333,7 +333,7 @@ class _ResidentDetailsState extends State<ResidentDetails> {
       // Change the endpoint to get the latest activity record
       final response = await http.get(
         Uri.parse(
-            'http://localhost:5001/api/activities/resident/${widget.residentId}/latest'),
+            'http://10.0.2.2:5001/api/activities/resident/${widget.residentId}/latest'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -382,8 +382,7 @@ class _ResidentDetailsState extends State<ResidentDetails> {
       }
 
       final response = await http.put(
-        Uri.parse(
-            'http://localhost:5001/api/activities/${activities[0]['id']}'),
+        Uri.parse('http://10.0.2.2:5001/api/activities/${activities[0]['id']}'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'name': updatedData['activity name'],

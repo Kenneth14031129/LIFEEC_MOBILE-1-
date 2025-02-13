@@ -51,7 +51,7 @@ class LoginPageState extends State<LoginPage>
 // Add this function outside the class to handle the API response
   Future<Map<String, dynamic>> loginUser(String email, String password) async {
     final response = await http.post(
-      Uri.parse('http://localhost:5001/api/users/login'),
+      Uri.parse('http://10.0.2.2:5001/api/users/login'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({
         'email': email,
@@ -66,7 +66,7 @@ class LoginPageState extends State<LoginPage>
   Future<Map<String, dynamic>> registerUser(String fullName, String email,
       String password, String phone, String userType) async {
     final response = await http.post(
-      Uri.parse('http://localhost:5001/api/users/register'),
+      Uri.parse('http://10.0.2.2:5001/api/users/register'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({
         'fullName': fullName,

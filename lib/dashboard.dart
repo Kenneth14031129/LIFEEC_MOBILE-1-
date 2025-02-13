@@ -45,7 +45,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (userId != null) {
       try {
         final response = await http.get(
-          Uri.parse('http://localhost:5001/api/users/profile/$userId'),
+          Uri.parse('http://10.0.2.2:5001/api/users/profile/$userId'),
           headers: {'Content-Type': 'application/json'},
         );
 
@@ -83,13 +83,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     try {
       // Fetch emergency alerts
       final alertsResponse = await http.get(
-        Uri.parse('http://localhost:5001/api/emergency-alerts'),
+        Uri.parse('http://10.0.2.2:5001/api/emergency-alerts'),
         headers: {'Content-Type': 'application/json'},
       );
 
       // Fetch residents count
       final residentsResponse = await http.get(
-        Uri.parse('http://localhost:5001/api/residents/search'),
+        Uri.parse('http://10.0.2.2:5001/api/residents/search'),
         headers: {'Content-Type': 'application/json'},
       );
 

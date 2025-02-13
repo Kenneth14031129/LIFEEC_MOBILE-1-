@@ -39,7 +39,7 @@ class _HealthHistoryViewState extends State<HealthHistoryView> {
     try {
       final response = await http.get(
         Uri.parse(
-            'http://localhost:5001/api/healthplans/history/${widget.residentId}'),
+            'http://10.0.2.2:5001/api/healthplans/history/${widget.residentId}'),
         headers: {'Content-Type': 'application/json'},
       );
 

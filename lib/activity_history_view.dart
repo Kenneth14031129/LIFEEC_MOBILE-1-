@@ -39,7 +39,7 @@ class _ActivityHistoryViewState extends State<ActivityHistoryView> {
     try {
       final response = await http.get(
         Uri.parse(
-            'http://localhost:5001/api/activities/resident/${widget.residentId}'),
+            'http://10.0.2.2:5001/api/activities/resident/${widget.residentId}'),
         headers: {'Content-Type': 'application/json'},
       );
 

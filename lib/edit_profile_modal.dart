@@ -53,7 +53,7 @@ class _EditProfileModalState extends State<EditProfileModal> {
     try {
       final response = await http.put(
         Uri.parse(
-            'http://localhost:5001/api/users/update/${widget.userData['_id']}'),
+            'http://10.0.2.2:5001/api/users/update/${widget.userData['_id']}'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'fullName': _fullNameController.text,
