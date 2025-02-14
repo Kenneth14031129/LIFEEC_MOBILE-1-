@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'login_page.dart';
+import 'dashboard.dart';
+import 'contact_list_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -75,7 +78,55 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const LoginPage(),
+      home: const AuthWrapper(),
     );
+  }
+}
+
+class AuthWrapper extends StatefulWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  bool isLoading = true;
+  Widget? initialScreen;
+
+  @override
+  void initState() {
+    super.initState();
+    checkLoginStatus();
+  }
+
+  Future<void> checkLoginStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('userId');
+    final userRole = prefs.getString('userRole');
+
+    setState(() {
+      if (userId != null && userRole != null) {
+        initialScreen = userRole.toLowerCase() == 'nurse'
+            ? const DashboardScreen()
+            : const ContactsListScreen();
+      } else {
+        initialScreen = const LoginPage();
+      }
+      isLoading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    return initialScreen ?? const LoginPage();
   }
 }

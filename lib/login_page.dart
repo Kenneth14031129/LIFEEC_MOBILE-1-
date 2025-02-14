@@ -328,8 +328,8 @@ class LoginPageState extends State<LoginPage>
         // Just the SVG without container
         Image.asset(
           'assets/Health.png',
-          width: 120,
-          height: 120,
+          width: 150,
+          height: 150,
         ),
         const SizedBox(height: 24),
         // Gradient Text for LIFEEC

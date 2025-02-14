@@ -214,10 +214,6 @@ class _ResidentHistoryModalState extends State<ResidentHistoryModal> {
           ),
           const Spacer(),
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: _fetchResidents,
-          ),
-          IconButton(
             icon: const Icon(Icons.close, color: Colors.white),
             onPressed: () => Navigator.of(context).pop(),
           ),

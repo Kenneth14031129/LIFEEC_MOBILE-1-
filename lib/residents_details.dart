@@ -756,43 +756,47 @@ class _ResidentDetailsState extends State<ResidentDetails> {
         Row(
           children: [
             Expanded(
-              child: _buildGradientButton(
-                'Update Health Plan',
-                () async {
-                  final result = await showDialog<Map<String, dynamic>>(
-                    context: context,
-                    builder: (context) => HealthUpdateModal(
-                      currentHealthData: healthData,
-                    ),
-                  );
+              child: SizedBox(
+                height: 52, // Increased height
+                child: _buildGradientButton(
+                  'Update Health Plan',
+                  () async {
+                    final result = await showDialog<Map<String, dynamic>>(
+                      context: context,
+                      builder: (context) => HealthUpdateModal(
+                        currentHealthData: healthData,
+                      ),
+                    );
 
-                  if (result != null) {
-                    // Call API to update health plan
-                    await _updateHealthPlan(result);
-                    // Refresh the health data
-                    await _fetchHealthData();
-                  }
-                },
+                    if (result != null) {
+                      await _updateHealthPlan(result);
+                      await _fetchHealthData();
+                    }
+                  },
+                ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 16), // Slightly more spacing between buttons
             Expanded(
-              child: _buildGradientButton(
-                'View Health History',
-                () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => HealthHistoryView(
-                        residentId: widget.residentId,
+              child: SizedBox(
+                height: 52, // Increased height
+                child: _buildGradientButton(
+                  'View Health History',
+                  () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => HealthHistoryView(
+                          residentId: widget.residentId,
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
             ),
           ],
-        ),
+        )
       ],
     );
   }
@@ -1379,43 +1383,49 @@ class _ResidentDetailsState extends State<ResidentDetails> {
         Row(
           children: [
             Expanded(
-              child: _buildGradientButton(
-                'Update Activity Plan',
-                () async {
-                  final currentActivity = activities.isNotEmpty
-                      ? activities[0]
-                      : <String, dynamic>{};
-                  final result = await showDialog<Map<String, dynamic>>(
-                    context: context,
-                    builder: (context) => ActivityUpdateModal(
-                      currentActivityData: currentActivity,
-                    ),
-                  );
+              child: SizedBox(
+                height: 52, // Increased height
+                child: _buildGradientButton(
+                  'Update Activity Plan',
+                  () async {
+                    final currentActivity = activities.isNotEmpty
+                        ? activities[0]
+                        : <String, dynamic>{};
+                    final result = await showDialog<Map<String, dynamic>>(
+                      context: context,
+                      builder: (context) => ActivityUpdateModal(
+                        currentActivityData: currentActivity,
+                      ),
+                    );
 
-                  if (result != null) {
-                    await _updateActivityPlan(result);
-                  }
-                },
+                    if (result != null) {
+                      await _updateActivityPlan(result);
+                    }
+                  },
+                ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 16), // Slightly more spacing between buttons
             Expanded(
-              child: _buildGradientButton(
-                'View Activity History',
-                () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ActivityHistoryView(
-                        residentId: widget.residentId,
+              child: SizedBox(
+                height: 52, // Increased height
+                child: _buildGradientButton(
+                  'View Activity History',
+                  () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ActivityHistoryView(
+                          residentId: widget.residentId,
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
             ),
           ],
-        ),
+        )
       ],
     );
   }

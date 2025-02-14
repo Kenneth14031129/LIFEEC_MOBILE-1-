@@ -240,10 +240,6 @@ class _AlertHistoryModalState extends State<AlertHistoryModal> {
           ),
           const Spacer(),
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: _fetchAlerts,
-          ),
-          IconButton(
             icon: const Icon(Icons.close, color: Colors.white),
             onPressed: () => Navigator.of(context).pop(),
           ),
@@ -302,24 +298,6 @@ class _AlertHistoryModalState extends State<AlertHistoryModal> {
                     _sortAscending ? Icons.arrow_upward : Icons.arrow_downward),
                 onPressed: () =>
                     setState(() => _sortAscending = !_sortAscending),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  value: _filterBy,
-                  decoration: InputDecoration(
-                    labelText: 'Filter by',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: 'all', child: Text('All Alerts')),
-                    DropdownMenuItem(value: 'read', child: Text('Read')),
-                    DropdownMenuItem(value: 'unread', child: Text('Unread')),
-                  ],
-                  onChanged: (value) => setState(() => _filterBy = value!),
-                ),
               ),
             ],
           ),
