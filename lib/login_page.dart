@@ -6,7 +6,6 @@ import 'contact_list_screen.dart';
 import 'dashboard.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:flutter_svg/flutter_svg.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -327,7 +326,7 @@ class LoginPageState extends State<LoginPage>
     return Column(
       children: [
         // Just the SVG without container
-        SvgPicture.asset(
+        Image.asset(
           'assets/Health.png',
           width: 120,
           height: 120,
