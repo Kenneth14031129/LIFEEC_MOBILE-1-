@@ -328,7 +328,7 @@ class LoginPageState extends State<LoginPage>
       children: [
         // Just the SVG without container
         SvgPicture.asset(
-          'assets/Health.svg',
+          'assets/Health.png',
           width: 120,
           height: 120,
         ),
