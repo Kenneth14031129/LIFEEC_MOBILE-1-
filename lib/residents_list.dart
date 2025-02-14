@@ -50,7 +50,8 @@ class _ResidentsListState extends State<ResidentsList> {
     if (userId != null) {
       try {
         final response = await http.get(
-          Uri.parse('http://10.0.2.2:5001/api/users/profile/$userId'),
+          Uri.parse(
+              'https://lifeec-mobile-1.onrender.com/api/users/profile/$userId'),
           headers: {'Content-Type': 'application/json'},
         );
 
@@ -83,7 +84,8 @@ class _ResidentsListState extends State<ResidentsList> {
     });
 
     try {
-      final Uri url = Uri.parse('http://10.0.2.2:5001/api/residents/search');
+      final Uri url = Uri.parse(
+          'https://lifeec-mobile-1.onrender.com/api/residents/search');
 
       if (kDebugMode) {
         print('Fetching from URL: $url');
@@ -148,7 +150,7 @@ class _ResidentsListState extends State<ResidentsList> {
   Future<void> _createEmergencyAlert(Map<String, dynamic> resident) async {
     try {
       final response = await http.post(
-        Uri.parse('http://10.0.2.2:5001/api/emergency-alerts'),
+        Uri.parse('https://lifeec-mobile-1.onrender.com/api/emergency-alerts'),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -207,7 +209,7 @@ class _ResidentsListState extends State<ResidentsList> {
   Future<void> _fetchUnreadCount() async {
     try {
       final response = await http.get(
-        Uri.parse('http://10.0.2.2:5001/api/emergency-alerts'),
+        Uri.parse('https://lifeec-mobile-1.onrender.com/api/emergency-alerts'),
         headers: {'Content-Type': 'application/json'},
       );
 

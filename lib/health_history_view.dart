@@ -39,7 +39,7 @@ class _HealthHistoryViewState extends State<HealthHistoryView> {
     try {
       final response = await http.get(
         Uri.parse(
-            'http://10.0.2.2:5001/api/healthplans/history/${widget.residentId}'),
+            'https://lifeec-mobile-1.onrender.com/api/healthplans/history/${widget.residentId}'),
         headers: {'Content-Type': 'application/json'},
       );
 

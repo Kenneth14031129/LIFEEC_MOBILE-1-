@@ -39,7 +39,7 @@ class _ActivityHistoryViewState extends State<ActivityHistoryView> {
     try {
       final response = await http.get(
         Uri.parse(
-            'http://10.0.2.2:5001/api/activities/resident/${widget.residentId}'),
+            'https://lifeec-mobile-1.onrender.com/api/activities/resident/${widget.residentId}'),
         headers: {'Content-Type': 'application/json'},
       );
 

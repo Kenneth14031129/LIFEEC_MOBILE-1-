@@ -147,7 +147,8 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
     if (userId != null) {
       try {
         final response = await http.get(
-          Uri.parse('http://10.0.2.2:5001/api/users/profile/$userId'),
+          Uri.parse(
+              'https://lifeec-mobile-1.onrender.com/api/users/profile/$userId'),
           headers: {'Content-Type': 'application/json'},
         );
 
@@ -169,7 +170,7 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
   Future<void> _fetchUnreadCount() async {
     try {
       final response = await http.get(
-        Uri.parse('http://10.0.2.2:5001/api/emergency-alerts'),
+        Uri.parse('https://lifeec-mobile-1.onrender.com/api/emergency-alerts'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -206,7 +207,7 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
     try {
       final response = await http.get(
         Uri.parse(
-            'http://10.0.2.2:5001/api/users/contacts?currentUserId=$userId'),
+            'https://lifeec-mobile-1.onrender.com/api/users/contacts?currentUserId=$userId'),
         headers: {'Content-Type': 'application/json'},
       );
 

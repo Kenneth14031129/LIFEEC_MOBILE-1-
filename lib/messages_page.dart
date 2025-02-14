@@ -92,7 +92,7 @@ class _MessagesPageState extends State<MessagesPage> {
     try {
       final response = await http.get(
         Uri.parse(
-            'http://10.0.2.2:5001/api/messages/conversation/$_currentUserId/${widget.contactId}'),
+            'https://lifeec-mobile-1.onrender.com/api/messages/conversation/$_currentUserId/${widget.contactId}'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -133,7 +133,7 @@ class _MessagesPageState extends State<MessagesPage> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://10.0.2.2:5001/api/messages'),
+        Uri.parse('https://lifeec-mobile-1.onrender.com/api/messages'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'senderId': _currentUserId,

@@ -39,7 +39,7 @@ class _MealHistoryViewState extends State<MealHistoryView> {
     try {
       final response = await http.get(
         Uri.parse(
-            'http://10.0.2.2:5001/api/meals/resident/${widget.residentId}'),
+            'https://lifeec-mobile-1.onrender.com/api/meals/resident/${widget.residentId}'),
         headers: {'Content-Type': 'application/json'},
       );
 

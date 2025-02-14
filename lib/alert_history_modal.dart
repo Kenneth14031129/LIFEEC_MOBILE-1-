@@ -38,7 +38,7 @@ class _AlertHistoryModalState extends State<AlertHistoryModal> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://10.0.2.2:5001/api/emergency-alerts'),
+        Uri.parse('https://lifeec-mobile-1.onrender.com/api/emergency-alerts'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -78,7 +78,8 @@ class _AlertHistoryModalState extends State<AlertHistoryModal> {
 
     try {
       final response = await http.patch(
-        Uri.parse('http://10.0.2.2:5001/api/emergency-alerts/$alertId/read'),
+        Uri.parse(
+            'https://lifeec-mobile-1.onrender.com/api/emergency-alerts/$alertId/read'),
         headers: {'Content-Type': 'application/json'},
       );
 
