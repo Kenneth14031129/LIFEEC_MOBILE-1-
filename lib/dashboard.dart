@@ -28,7 +28,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<Map<String, dynamic>> notifications = [];
   List<Map<String, dynamic>> monthlyStats = [];
   bool showNotifications = false;
-  int _selectedTimeRange = 30;
+  int _selectedTimeRange = 2025;
   int _selectedIndex = 0;
   String? userId;
   String userInitial = 'N';
@@ -639,16 +639,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         underline: const SizedBox(),
         items: [
           DropdownMenuItem(
-            value: 7,
-            child: Text('7 days', style: GoogleFonts.poppins()),
-          ),
-          DropdownMenuItem(
-            value: 30,
-            child: Text('30 days', style: GoogleFonts.poppins()),
-          ),
-          DropdownMenuItem(
-            value: 90,
-            child: Text('90 days', style: GoogleFonts.poppins()),
+            value: 2025,
+            child: Text('2025', style: GoogleFonts.poppins()),
           ),
         ],
         onChanged: (value) {

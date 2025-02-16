@@ -1265,8 +1265,6 @@ class _ResidentDetailsState extends State<ResidentDetails> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const Spacer(),
-                _buildStatusChip(meal['completed'] ?? false),
               ],
             ),
             const SizedBox(height: 16),
