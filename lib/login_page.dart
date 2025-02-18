@@ -49,7 +49,161 @@ class LoginPageState extends State<LoginPage>
     super.dispose();
   }
 
-// Add this function outside the class to handle the API response
+  Future<void> _handleSubmit() async {
+    if (!_validateForm()) return;
+
+    setState(() {
+      isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      Map<String, dynamic> response;
+
+      if (isLogin) {
+        response =
+            await loginUser(_emailController.text, _passwordController.text);
+
+        // Check for error messages in the response
+        if (response.containsKey('error') || response.containsKey('message')) {
+          final errorMsg = response['error'] ?? response['message'];
+          if (errorMsg != null) {
+            throw errorMsg.toString();
+          }
+        }
+
+        // Safely access nested user data
+        final userData = response['user'] as Map<String, dynamic>?;
+        if (userData == null) {
+          throw 'Invalid response format';
+        }
+
+        // Check if user is archived
+        if (userData['isArchived'] == true) {
+          throw 'This account has been archived. Please contact your administrator.';
+        }
+
+        // Check verification status
+        if (userData['isVerified'] == false) {
+          throw 'Account is pending verification. Please wait for admin approval.';
+        }
+
+        // Check if user type is valid
+        final userType = userData['userType']?.toString().toLowerCase();
+        if (userType == null ||
+            !['nurse', 'nutritionist', 'relative'].contains(userType)) {
+          throw 'Invalid user type. Access denied.';
+        }
+
+        // Save user data to shared preferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('userId', userData['id']?.toString() ?? '');
+        await prefs.setString('userRole', userType);
+        await prefs.setString('userEmail', userData['email']?.toString() ?? '');
+        await prefs.setString(
+            'userName', userData['fullName']?.toString() ?? '');
+
+        if (mounted) {
+          // Show success message
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Successfully logged in!',
+                style: GoogleFonts.poppins(color: Colors.white),
+              ),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+
+          // Navigate to appropriate screen based on user type
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => userType == 'nurse'
+                  ? const DashboardScreen()
+                  : const ContactsListScreen(),
+            ),
+          );
+        }
+      } else {
+        // Registration flow
+        response = await registerUser(
+          _fullNameController.text,
+          _emailController.text,
+          _passwordController.text,
+          _phoneController.text,
+          _selectedUserType,
+        );
+
+        // Check for registration errors
+        if (response.containsKey('error') || response.containsKey('message')) {
+          final errorMsg = response['error'] ?? response['message'];
+          if (errorMsg != null && errorMsg.toString().isNotEmpty) {
+            throw errorMsg.toString();
+          }
+        }
+
+        // Extract userId from the response
+        final userId = response['userId'] ?? response['user']?['id'];
+        if (userId == null) {
+          throw 'Invalid response format';
+        }
+
+        if (mounted) {
+          // Show success message
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Registration successful! Please verify your email.',
+                style: GoogleFonts.poppins(color: Colors.white),
+              ),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+
+          // Navigate to OTP verification screen
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => OTPVerificationScreen(
+                userId: userId.toString(),
+                email: _emailController.text,
+              ),
+            ),
+          );
+        }
+      }
+    } catch (error) {
+      // Handle errors
+      setState(() {
+        _errorMessage = error.toString();
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              error.toString(),
+              style: GoogleFonts.poppins(color: Colors.white),
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      // Reset loading state
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  }
+
+// Helper functions for API calls
   Future<Map<String, dynamic>> loginUser(String email, String password) async {
     final response = await http.post(
       Uri.parse('https://lifeec-mobile-1.onrender.com/api/users/login'),
@@ -60,10 +214,14 @@ class LoginPageState extends State<LoginPage>
       }),
     );
 
-    return json.decode(response.body);
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return json.decode(response.body);
+    } else {
+      final errorData = json.decode(response.body);
+      throw errorData['message'] ?? 'Login failed';
+    }
   }
 
-// Add this function outside the class to handle registration
   Future<Map<String, dynamic>> registerUser(String fullName, String email,
       String password, String phone, String userType) async {
     try {
@@ -78,13 +236,6 @@ class LoginPageState extends State<LoginPage>
           'userType': userType,
         }),
       );
-
-      if (kDebugMode) {
-        print('Response status code: ${response.statusCode}');
-      }
-      if (kDebugMode) {
-        print('Response body: ${response.body}');
-      }
 
       if (response.statusCode == 400) {
         final errorData = json.decode(response.body);
@@ -104,150 +255,32 @@ class LoginPageState extends State<LoginPage>
     }
   }
 
-// Replace the existing _handleSubmit with this version
-  Future<void> _handleSubmit() async {
-    if (!_validateForm()) return;
-
+// Also update _validateForm to include email validation:
+  bool _validateForm() {
+    // Clear any previous error message
     setState(() {
-      isLoading = true;
       _errorMessage = null;
     });
 
-    try {
-      Map<String, dynamic> response;
-
-      if (isLogin) {
-        response =
-            await loginUser(_emailController.text, _passwordController.text);
-
-        if (response.containsKey('error') || response.containsKey('message')) {
-          throw response['error'] ?? response['message'];
-        }
-
-        // Safely access nested user data with null checks
-        final userData = response['user'] as Map<String, dynamic>?;
-        if (userData == null) {
-          throw 'Invalid response format';
-        }
-
-        // Check if user is archived
-        if (userData['isArchived'] == true) {
-          throw 'This account has been archived. Please contact your administrator.';
-        }
-
-        // Check if user type is valid
-        final userType = userData['userType'] as String?;
-        if (userType == null ||
-            !['nurse', 'nutritionist', 'relative'].contains(userType)) {
-          throw 'Invalid user type. Access denied.';
-        }
-
-        // Save user data with null checks
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('userId', userData['id']?.toString() ?? '');
-        await prefs.setString('userRole', userType);
-        await prefs.setString('userEmail', userData['email']?.toString() ?? '');
-        await prefs.setString(
-            'userName', userData['fullName']?.toString() ?? '');
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Successfully logged in!',
-                style: GoogleFonts.poppins(color: Colors.white),
-              ),
-              backgroundColor: Colors.green,
-              duration: const Duration(seconds: 2),
-            ),
-          );
-
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) {
-                return userType.toLowerCase() == 'nurse'
-                    ? const DashboardScreen()
-                    : const ContactsListScreen();
-              },
-            ),
-          );
-        }
-      } else {
-        // Registration logic
-        response = await registerUser(
-          _fullNameController.text,
-          _emailController.text,
-          _passwordController.text,
-          _phoneController.text,
-          _selectedUserType,
-        );
-
-// Extract userId from the response - modify this part
-        final userId = response['userId'] ?? response['user']?['id'];
-        if (userId == null) {
-          throw 'Invalid response format';
-        }
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Registration successful! Please verify your email.',
-                style: GoogleFonts.poppins(color: Colors.white),
-              ),
-              backgroundColor: Colors.green,
-              duration: const Duration(seconds: 2),
-            ),
-          );
-
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => OTPVerificationScreen(
-                userId: userId.toString(),
-                email: _emailController.text,
-              ),
-            ),
-          );
-        }
-      }
-    } catch (error) {
-      setState(() {
-        _errorMessage = error.toString();
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              error.toString(),
-              style: GoogleFonts.poppins(color: Colors.white),
-            ),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
+    if (isLogin) {
+      // Login validation
+      if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
         setState(() {
-          isLoading = false;
+          _errorMessage = 'Please enter both email and password';
         });
+        return false;
       }
-    }
-  }
-
-// Also update _validateForm to include email validation:
-  bool _validateForm() {
-    if (_fullNameController.text.isEmpty ||
-        _emailController.text.isEmpty ||
-        _passwordController.text.isEmpty ||
-        _phoneController.text.isEmpty) {
-      setState(() {
-        _errorMessage = 'Please fill in all required fields';
-      });
-      return false;
+    } else {
+      // Registration validation
+      if (_fullNameController.text.isEmpty ||
+          _emailController.text.isEmpty ||
+          _passwordController.text.isEmpty ||
+          _phoneController.text.isEmpty) {
+        setState(() {
+          _errorMessage = 'Please fill in all required fields';
+        });
+        return false;
+      }
     }
 
     // Email format validation
