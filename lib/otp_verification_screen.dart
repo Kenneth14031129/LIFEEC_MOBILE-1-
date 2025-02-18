@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'login_page.dart';
 
 class OTPVerificationScreen extends StatefulWidget {
   final String userId;
@@ -54,25 +54,43 @@ class OTPVerificationScreenState extends State<OTPVerificationScreen> {
       final data = json.decode(response.body);
 
       if (response.statusCode == 200) {
-        // Save user data
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('userId', widget.userId);
-        await prefs.setString('userEmail', data['user']['email']);
-        await prefs.setString('userName', data['user']['fullName']);
-        await prefs.setString('userRole', data['user']['userType']);
-
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Email verified successfully'),
-              backgroundColor: Colors.green,
-            ),
+          // Show a dialog informing the user to wait for admin approval
+          await showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: Text(
+                  'Verification Pending',
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue[700],
+                  ),
+                ),
+                content: Text(
+                  'Your email has been verified. Please wait for admin or owner approval to activate your account.',
+                  style: GoogleFonts.poppins(),
+                ),
+                actions: <Widget>[
+                  TextButton(
+                    child: Text(
+                      'Back to Login',
+                      style: GoogleFonts.poppins(
+                        color: Colors.blue[700],
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (context) => const LoginPage()),
+                        (Route<dynamic> route) => false,
+                      );
+                    },
+                  ),
+                ],
+              );
+            },
           );
-
-          // Navigate based on user type
-          final userType = data['user']['userType'];
-          Navigator.pushReplacementNamed(context,
-              userType.toLowerCase() == 'nurse' ? '/dashboard' : '/contacts');
         }
       } else {
         setState(() {

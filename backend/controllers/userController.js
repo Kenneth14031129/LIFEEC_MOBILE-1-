@@ -94,7 +94,12 @@ exports.verifyOTP = async (req, res) => {
       return res.status(400).json({ message: "OTP expired" });
     }
 
+    // Mark OTP as verified
     user.otp.verified = true;
+    
+    // Set isVerified to false by default
+    user.isVerified = false;
+    
     await user.save();
 
     res.json({
@@ -103,8 +108,9 @@ exports.verifyOTP = async (req, res) => {
         fullName: user.fullName,
         email: user.email,
         userType: user.userType,
+        isVerified: user.isVerified
       },
-      message: "Email verified successfully"
+      message: "Email verified successfully. Awaiting admin approval."
     });
   } catch (error) {
     console.error("OTP verification error:", error);
