@@ -136,12 +136,9 @@ class LoginPageState extends State<LoginPage>
           _selectedUserType,
         );
 
-        // Check for registration errors
-        if (response.containsKey('error') || response.containsKey('message')) {
-          final errorMsg = response['error'] ?? response['message'];
-          if (errorMsg != null && errorMsg.toString().isNotEmpty) {
-            throw errorMsg.toString();
-          }
+        // Add debug prints
+        if (kDebugMode) {
+          print('Registration response: $response');
         }
 
         // Extract userId from the response
@@ -150,8 +147,14 @@ class LoginPageState extends State<LoginPage>
           throw 'Invalid response format';
         }
 
+        // Add debug prints
+        if (kDebugMode) {
+          print('Extracted userId: $userId');
+          print('Email: ${_emailController.text}');
+        }
+
         if (mounted) {
-          // Show success message
+          // Show success message and navigate after a brief delay
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -163,16 +166,21 @@ class LoginPageState extends State<LoginPage>
             ),
           );
 
-          // Navigate to OTP verification screen
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => OTPVerificationScreen(
-                userId: userId.toString(),
-                email: _emailController.text,
-              ),
-            ),
-          );
+          // Add a slight delay to allow the snackbar to be visible
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted) {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => OTPVerificationScreen(
+                    userId: userId.toString(),
+                    email: _emailController.text,
+                  ),
+                ),
+                (route) => false, // This will clear the navigation stack
+              );
+            }
+          });
         }
       }
     } catch (error) {

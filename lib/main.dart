@@ -81,25 +81,24 @@ class MyApp extends StatelessWidget {
       ),
       // Define named routes
       routes: {
-        '/': (context) => const AuthWrapper(),
-        '/login': (context) => const LoginPage(),
-        '/dashboard': (context) => const DashboardScreen(),
-        '/contacts': (context) => const ContactsListScreen(),
-      },
-      // Add onGenerateRoute for dynamic routes
-      onGenerateRoute: (settings) {
-        if (settings.name == '/verify-otp') {
-          final args = settings.arguments as Map<String, dynamic>;
-          return MaterialPageRoute(
-            builder: (context) => OTPVerificationScreen(
-              userId: args['userId'],
-              email: args['email'],
-            ),
-          );
-        }
-        return null;
-      },
-    );
+    '/': (context) => const AuthWrapper(),
+    '/login': (context) => const LoginPage(),
+    '/dashboard': (context) => const DashboardScreen(),
+    '/contacts': (context) => const ContactsListScreen(),
+  },
+  onGenerateRoute: (settings) {
+    if (settings.name == '/verify-otp') {
+      final args = settings.arguments as Map<String, dynamic>;
+      return MaterialPageRoute(
+        builder: (context) => OTPVerificationScreen(
+          userId: args['userId'],
+          email: args['email'],
+        ),
+      );
+    }
+    return null;
+  },
+);
   }
 }
 
