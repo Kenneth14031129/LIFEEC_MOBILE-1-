@@ -155,148 +155,289 @@ class _ProfileModalState extends State<ProfileModal> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          children: [
-            Text(
-              'Profile Settings',
-              style: GoogleFonts.poppins(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+        // Header with close button
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Row(
+            children: [
+              Text(
+                'Profile Settings',
+                style: GoogleFonts.poppins(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue[800],
+                ),
               ),
-            ),
-            const Spacer(),
-            IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ],
-        ),
-        const SizedBox(height: 24),
-        CircleAvatar(
-          radius: 50,
-          backgroundColor: Colors.blue[100],
-          child: Text(
-            userInitial,
-            style: GoogleFonts.poppins(
-              fontSize: 36,
-              fontWeight: FontWeight.bold,
-              color: Colors.blue[800],
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          '${userData?['fullName'] ?? 'User Name'} ($formattedUserType)',
-          style: GoogleFonts.poppins(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        Text(
-          userData?['email'] ?? 'email@example.com',
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            color: Colors.grey[600],
-          ),
-        ),
-        Text(
-          userData?['phone'] ?? 'No phone number',
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            color: Colors.grey[600],
-          ),
-        ),
-        const SizedBox(height: 24),
-        _buildSettingsItem(
-          icon: Icons.person_outline,
-          title: 'Edit Profile',
-          onTap: () {
-            showDialog(
-              context: context,
-              builder: (context) => EditProfileModal(
-                userData: userData!,
-                onProfileUpdate: () {
-                  _fetchUserProfile();
-                },
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.grey),
+                onPressed: () => Navigator.pop(context),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.grey[100],
+                  padding: const EdgeInsets.all(8),
+                ),
               ),
-            );
-          },
+            ],
+          ),
         ),
-        _buildSettingsItem(
-          icon: Icons.lock_outline,
-          title: 'Change Password',
-          onTap: () {
-            showDialog(
-              context: context,
-              builder: (context) => ChangePasswordModal(
-                userId: widget.userId,
+        const SizedBox(height: 20),
+
+        // Profile Avatar and Info Card
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.blue[50]!, Colors.blue[100]!],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 2,
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
-            );
-          },
-        ),
-        const Divider(height: 32),
-        _buildSettingsItem(
-          icon: Icons.logout,
-          title: 'Logout',
-          color: Colors.red[700],
-          onTap: () {
-            showDialog(
-              context: context,
-              builder: (dialogContext) => AlertDialog(
-                title: Text(
-                  'Confirm Logout',
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.bold,
+            ],
+          ),
+          child: Column(
+            children: [
+              // Avatar with gradient background
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [Colors.blue[300]!, Colors.blue[600]!],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
                 ),
-                content: Text(
-                  'Are you sure you want to logout?',
-                  style: GoogleFonts.poppins(),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(dialogContext),
-                    child: Text(
-                      'Cancel',
-                      style: GoogleFonts.poppins(),
+                child: CircleAvatar(
+                  radius: 46,
+                  backgroundColor: Colors.white,
+                  child: Text(
+                    userInitial,
+                    style: GoogleFonts.poppins(
+                      fontSize: 36,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue[700],
                     ),
                   ),
-                  TextButton(
-                    onPressed: () => _handleLogout(context),
-                    child: Text(
-                      'Logout',
-                      style: GoogleFonts.poppins(
-                        color: Colors.red[700],
-                      ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // User Info
+              Text(
+                userData?['fullName'] ?? 'User Name',
+                style: GoogleFonts.poppins(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.blue[900],
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                margin: const EdgeInsets.only(top: 8),
+                decoration: BoxDecoration(
+                  color: Colors.blue[700],
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  formattedUserType,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Contact Info
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.email_outlined, size: 16, color: Colors.grey[600]),
+                  const SizedBox(width: 8),
+                  Text(
+                    userData?['email'] ?? 'email@example.com',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: Colors.grey[700],
                     ),
                   ),
                 ],
               ),
-            );
-          },
+              const SizedBox(height: 4),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.phone_outlined, size: 16, color: Colors.grey[600]),
+                  const SizedBox(width: 8),
+                  Text(
+                    userData?['phone'] ?? 'No phone number',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // Settings Options
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            children: [
+              _buildSettingsItem(
+                icon: Icons.person_outline,
+                title: 'Edit Profile',
+                subtitle: 'Update your personal information',
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => EditProfileModal(
+                      userData: userData!,
+                      onProfileUpdate: () {
+                        _fetchUserProfile();
+                      },
+                    ),
+                  );
+                },
+              ),
+              Divider(color: Colors.grey[200], height: 1),
+              _buildSettingsItem(
+                icon: Icons.lock_outline,
+                title: 'Change Password',
+                subtitle: 'Update your security credentials',
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => ChangePasswordModal(
+                      userId: widget.userId,
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // Logout Button
+        Container(
+          width: double.infinity,
+          height: 50,
+          margin: const EdgeInsets.only(bottom: 8),
+          child: ElevatedButton.icon(
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (dialogContext) => AlertDialog(
+                  title: Text(
+                    'Confirm Logout',
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  content: Text(
+                    'Are you sure you want to logout?',
+                    style: GoogleFonts.poppins(),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      child: Text(
+                        'Cancel',
+                        style: GoogleFonts.poppins(),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => _handleLogout(context),
+                      child: Text(
+                        'Logout',
+                        style: GoogleFonts.poppins(
+                          color: Colors.red[700],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+            icon: const Icon(Icons.logout, color: Colors.red),
+            label: Text(
+              'Logout',
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.red,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red[50],
+              foregroundColor: Colors.red,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
         ),
       ],
     );
   }
 
+// Updated settings item widget
   Widget _buildSettingsItem({
     required IconData icon,
     required String title,
+    required String subtitle,
     required VoidCallback onTap,
-    Color? color,
   }) {
     return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(
-        icon,
-        color: color ?? Colors.grey[800],
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.blue[50],
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(
+          icon,
+          color: Colors.blue[700],
+          size: 20,
+        ),
       ),
       title: Text(
         title,
         style: GoogleFonts.poppins(
-          color: color ?? Colors.grey[800],
           fontWeight: FontWeight.w500,
+          fontSize: 16,
         ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: GoogleFonts.poppins(
+          color: Colors.grey[600],
+          fontSize: 12,
+        ),
+      ),
+      trailing: Icon(
+        Icons.arrow_forward_ios,
+        size: 16,
+        color: Colors.grey[400],
       ),
       onTap: onTap,
     );

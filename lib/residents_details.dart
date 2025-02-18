@@ -139,7 +139,7 @@ class _ResidentDetailsState extends State<ResidentDetails> {
       setState(() {
         healthData = {
           'allergies': <String>[],
-          'medications': [],
+          'medications': <Map<String, dynamic>>[],
           'conditions': <String>[],
           'assessment': 'No assessment available',
           'instructions': 'No special instructions',
@@ -879,7 +879,12 @@ class _ResidentDetailsState extends State<ResidentDetails> {
   }
 
   Widget _buildMedications() {
-    final medications = healthData['medications'] as List<Map<String, dynamic>>;
+    // Properly cast the medications data
+    final List<Map<String, dynamic>> medications =
+        (healthData['medications'] as List<dynamic>?)
+                ?.map((med) => med as Map<String, dynamic>)
+                .toList() ??
+            [];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
