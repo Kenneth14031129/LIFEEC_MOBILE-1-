@@ -586,22 +586,6 @@ class _ResidentsListState extends State<ResidentsList> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.location_on,
-                            size: 16,
-                            color: Colors.grey[600],
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            resident['location'],
-                            style: GoogleFonts.poppins(
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
                     ],
                   ),
                 ),
@@ -663,6 +647,8 @@ class _ResidentsListState extends State<ResidentsList> {
               children: [
                 _buildInfoRow('DOB:', resident['dateOfBirth']),
                 const SizedBox(height: 8),
+                _buildInfoRow('Location:', resident['location']),
+                const SizedBox(height: 8),
                 _buildInfoRow('Gender:', resident['gender']),
                 const SizedBox(height: 8),
                 _buildInfoRow('Phone:', resident['phone']),
@@ -697,7 +683,7 @@ class _ResidentsListState extends State<ResidentsList> {
                   MaterialPageRoute(
                     builder: (context) => ResidentDetails(
                       residentId: resident['id'],
-                      userRole: userRole, // Add this line to pass the user role
+                      userRole: userRole,
                     ),
                   ),
                 );
