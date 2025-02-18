@@ -30,15 +30,15 @@ class _ResidentsListState extends State<ResidentsList> {
   String userRole = 'nurse';
 
   @override
-void initState() {
-  super.initState();
-  // Initialize _selectedIndex with a default value before loading user role
-  _selectedIndex = 0;  // Default to first tab
-  _initializeSelectedIndex(); // This will update based on user role
-  _loadUserId();
-  _fetchResidents();
-  _fetchUnreadCount();
-}
+  void initState() {
+    super.initState();
+    // Initialize _selectedIndex with a default value before loading user role
+    _selectedIndex = 0; // Default to first tab
+    _initializeSelectedIndex(); // This will update based on user role
+    _loadUserId();
+    _fetchResidents();
+    _fetchUnreadCount();
+  }
 
 // Add this method
   Future<void> _initializeSelectedIndex() async {
@@ -697,6 +697,7 @@ void initState() {
                   MaterialPageRoute(
                     builder: (context) => ResidentDetails(
                       residentId: resident['id'],
+                      userRole: userRole, // Add this line to pass the user role
                     ),
                   ),
                 );

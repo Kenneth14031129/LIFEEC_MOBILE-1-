@@ -6,7 +6,12 @@ import 'dart:convert';
 import 'residents_details.dart';
 
 class ResidentHistoryModal extends StatefulWidget {
-  const ResidentHistoryModal({super.key});
+  final String userRole;
+
+  const ResidentHistoryModal({
+    super.key,
+    required this.userRole,
+  });
 
   @override
   State<ResidentHistoryModal> createState() => _ResidentHistoryModalState();
@@ -333,6 +338,7 @@ class _ResidentHistoryModalState extends State<ResidentHistoryModal> {
                     MaterialPageRoute(
                       builder: (context) => ResidentDetails(
                         residentId: resident['id'],
+                        userRole: widget.userRole, // Pass the user role here
                       ),
                     ),
                   );

@@ -526,7 +526,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         if (title == 'Total Residents') {
           showDialog(
             context: context,
-            builder: (context) => const ResidentHistoryModal(),
+            builder: (context) => ResidentHistoryModal(
+              userRole: userRole, // Pass the user role here
+            ),
           );
         } else if (title == 'Total Alerts') {
           showDialog(

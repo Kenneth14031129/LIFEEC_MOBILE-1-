@@ -13,10 +13,12 @@ import 'meal_update_modal.dart';
 
 class ResidentDetails extends StatefulWidget {
   final String residentId;
+  final String userRole;
 
   const ResidentDetails({
     super.key,
     required this.residentId,
+    required this.userRole,
   });
 
   @override
@@ -755,31 +757,33 @@ class _ResidentDetailsState extends State<ResidentDetails> {
         const SizedBox(height: 24),
         Row(
           children: [
-            Expanded(
-              child: SizedBox(
-                height: 52, // Increased height
-                child: _buildGradientButton(
-                  'Update Health Plan',
-                  () async {
-                    final result = await showDialog<Map<String, dynamic>>(
-                      context: context,
-                      builder: (context) => HealthUpdateModal(
-                        currentHealthData: healthData,
-                      ),
-                    );
+            if (widget.userRole.toLowerCase() == 'nurse') // Add this condition
+              Expanded(
+                child: SizedBox(
+                  height: 52,
+                  child: _buildGradientButton(
+                    'Update Health Plan',
+                    () async {
+                      final result = await showDialog<Map<String, dynamic>>(
+                        context: context,
+                        builder: (context) => HealthUpdateModal(
+                          currentHealthData: healthData,
+                        ),
+                      );
 
-                    if (result != null) {
-                      await _updateHealthPlan(result);
-                      await _fetchHealthData();
-                    }
-                  },
+                      if (result != null) {
+                        await _updateHealthPlan(result);
+                        await _fetchHealthData();
+                      }
+                    },
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 16), // Slightly more spacing between buttons
+            if (widget.userRole.toLowerCase() == 'nurse') // Add this condition
+              const SizedBox(width: 16),
             Expanded(
               child: SizedBox(
-                height: 52, // Increased height
+                height: 52,
                 child: _buildGradientButton(
                   'View Health History',
                   () {
@@ -1239,7 +1243,7 @@ class _ResidentDetailsState extends State<ResidentDetails> {
               ),
             ),
           ],
-        ),
+        )
       ],
     );
   }
@@ -1385,33 +1389,35 @@ class _ResidentDetailsState extends State<ResidentDetails> {
         const SizedBox(height: 24),
         Row(
           children: [
-            Expanded(
-              child: SizedBox(
-                height: 52, // Increased height
-                child: _buildGradientButton(
-                  'Update Activity Plan',
-                  () async {
-                    final currentActivity = activities.isNotEmpty
-                        ? activities[0]
-                        : <String, dynamic>{};
-                    final result = await showDialog<Map<String, dynamic>>(
-                      context: context,
-                      builder: (context) => ActivityUpdateModal(
-                        currentActivityData: currentActivity,
-                      ),
-                    );
+            if (widget.userRole.toLowerCase() == 'nurse') // Add this condition
+              Expanded(
+                child: SizedBox(
+                  height: 52,
+                  child: _buildGradientButton(
+                    'Update Activity Plan',
+                    () async {
+                      final currentActivity = activities.isNotEmpty
+                          ? activities[0]
+                          : <String, dynamic>{};
+                      final result = await showDialog<Map<String, dynamic>>(
+                        context: context,
+                        builder: (context) => ActivityUpdateModal(
+                          currentActivityData: currentActivity,
+                        ),
+                      );
 
-                    if (result != null) {
-                      await _updateActivityPlan(result);
-                    }
-                  },
+                      if (result != null) {
+                        await _updateActivityPlan(result);
+                      }
+                    },
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 16), // Slightly more spacing between buttons
+            if (widget.userRole.toLowerCase() == 'nurse') // Add this condition
+              const SizedBox(width: 16),
             Expanded(
               child: SizedBox(
-                height: 52, // Increased height
+                height: 52,
                 child: _buildGradientButton(
                   'View Activity History',
                   () {
