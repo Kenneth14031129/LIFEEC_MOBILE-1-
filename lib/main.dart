@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'login_page.dart';
 import 'dashboard.dart';
 import 'contact_list_screen.dart';
+import 'otp_verification_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -78,7 +79,26 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const AuthWrapper(),
+      // Define named routes
+      routes: {
+        '/': (context) => const AuthWrapper(),
+        '/login': (context) => const LoginPage(),
+        '/dashboard': (context) => const DashboardScreen(),
+        '/contacts': (context) => const ContactsListScreen(),
+      },
+      // Add onGenerateRoute for dynamic routes
+      onGenerateRoute: (settings) {
+        if (settings.name == '/verify-otp') {
+          final args = settings.arguments as Map<String, dynamic>;
+          return MaterialPageRoute(
+            builder: (context) => OTPVerificationScreen(
+              userId: args['userId'],
+              email: args['email'],
+            ),
+          );
+        }
+        return null;
+      },
     );
   }
 }

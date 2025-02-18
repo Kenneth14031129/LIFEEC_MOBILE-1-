@@ -175,11 +175,6 @@ class LoginPageState extends State<LoginPage>
         }
       } else {
         // Registration logic
-        if (!['nurse', 'nutritionist', 'relative']
-            .contains(_selectedUserType)) {
-          throw 'Invalid user type. Only nurses, nutritionists, and relatives can register.';
-        }
-
         response = await registerUser(
           _fullNameController.text,
           _emailController.text,
@@ -188,8 +183,8 @@ class LoginPageState extends State<LoginPage>
           _selectedUserType,
         );
 
-        // Extract userId from the response
-        final userId = response['user']?['id'];
+// Extract userId from the response - modify this part
+        final userId = response['userId'] ?? response['user']?['id'];
         if (userId == null) {
           throw 'Invalid response format';
         }
