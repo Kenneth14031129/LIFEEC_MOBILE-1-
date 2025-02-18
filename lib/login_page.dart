@@ -7,6 +7,8 @@ import 'dashboard.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'otp_verification_screen.dart';
+
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -25,7 +27,7 @@ class LoginPageState extends State<LoginPage>
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
-  String? _selectedUserType = 'nurse';
+  String _selectedUserType = 'nurse';
   String? _errorMessage;
 
   @override
@@ -64,19 +66,42 @@ class LoginPageState extends State<LoginPage>
 // Add this function outside the class to handle registration
   Future<Map<String, dynamic>> registerUser(String fullName, String email,
       String password, String phone, String userType) async {
-    final response = await http.post(
-      Uri.parse('https://lifeec-mobile-1.onrender.com/api/users/register'),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({
-        'fullName': fullName,
-        'email': email,
-        'password': password,
-        'phone': phone,
-        'userType': userType,
-      }),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse('https://lifeec-mobile-1.onrender.com/api/users/register'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'fullName': fullName,
+          'email': email,
+          'password': password,
+          'phone': phone,
+          'userType': userType,
+        }),
+      );
 
-    return json.decode(response.body);
+      if (kDebugMode) {
+        print('Response status code: ${response.statusCode}');
+      }
+      if (kDebugMode) {
+        print('Response body: ${response.body}');
+      }
+
+      if (response.statusCode == 400) {
+        final errorData = json.decode(response.body);
+        throw errorData['message'] ?? 'Registration failed';
+      }
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw 'Unexpected error occurred';
+      }
+
+      return json.decode(response.body);
+    } catch (e) {
+      if (kDebugMode) {
+        print('Registration error: $e');
+      }
+      rethrow;
+    }
   }
 
 // Replace the existing _handleSubmit with this version
@@ -92,7 +117,6 @@ class LoginPageState extends State<LoginPage>
       Map<String, dynamic> response;
 
       if (isLogin) {
-        // Handle login
         response =
             await loginUser(_emailController.text, _passwordController.text);
 
@@ -100,32 +124,57 @@ class LoginPageState extends State<LoginPage>
           throw response['error'] ?? response['message'];
         }
 
+        // Safely access nested user data with null checks
+        final userData = response['user'] as Map<String, dynamic>?;
+        if (userData == null) {
+          throw 'Invalid response format';
+        }
+
         // Check if user is archived
-        if (response['user']['isArchived'] == true) {
+        if (userData['isArchived'] == true) {
           throw 'This account has been archived. Please contact your administrator.';
         }
 
         // Check if user type is valid
-        final userType = response['user']['userType'];
-        if (!['nurse', 'nutritionist', 'relative'].contains(userType)) {
+        final userType = userData['userType'] as String?;
+        if (userType == null ||
+            !['nurse', 'nutritionist', 'relative'].contains(userType)) {
           throw 'Invalid user type. Access denied.';
         }
 
-        // Save user ID to SharedPreferences
+        // Save user data with null checks
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('userId', response['user']['id']);
-        await prefs.setString('userRole', response['user']['userType']);
-        await prefs.setString('userEmail', response['user']['email']);
-        await prefs.setString('userName', response['user']['fullName']);
+        await prefs.setString('userId', userData['id']?.toString() ?? '');
+        await prefs.setString('userRole', userType);
+        await prefs.setString('userEmail', userData['email']?.toString() ?? '');
+        await prefs.setString(
+            'userName', userData['fullName']?.toString() ?? '');
 
-        if (kDebugMode) {
-          print('Saved userId: ${response['user']['id']}');
-          print('Saved userRole: ${response['user']['userType']}');
-          print('Saved userEmail: ${response['user']['email']}');
-          print('Saved userName: ${response['user']['fullName']}');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Successfully logged in!',
+                style: GoogleFonts.poppins(color: Colors.white),
+              ),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) {
+                return userType.toLowerCase() == 'nurse'
+                    ? const DashboardScreen()
+                    : const ContactsListScreen();
+              },
+            ),
+          );
         }
       } else {
-        // Handle registration
+        // Registration logic
         if (!['nurse', 'nutritionist', 'relative']
             .contains(_selectedUserType)) {
           throw 'Invalid user type. Only nurses, nutritionists, and relatives can register.';
@@ -136,63 +185,43 @@ class LoginPageState extends State<LoginPage>
           _emailController.text,
           _passwordController.text,
           _phoneController.text,
-          _selectedUserType!,
+          _selectedUserType,
         );
 
-        if (response.containsKey('error') || response.containsKey('message')) {
-          throw response['error'] ?? response['message'];
+        // Extract userId from the response
+        final userId = response['user']?['id'];
+        if (userId == null) {
+          throw 'Invalid response format';
         }
 
-        // After successful registration, automatically save user data
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('userId', response['user']['id']);
-        await prefs.setString('userRole', response['user']['userType']);
-        await prefs.setString('userEmail', response['user']['email']);
-        await prefs.setString('userName', response['user']['fullName']);
-
-        if (kDebugMode) {
-          print('Saved new user data:');
-          print('userId: ${response['user']['id']}');
-          print('userRole: ${response['user']['userType']}');
-          print('userEmail: ${response['user']['email']}');
-          print('userName: ${response['user']['fullName']}');
-        }
-      }
-
-      if (mounted) {
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              isLogin ? 'Successfully logged in!' : 'Successfully registered!',
-              style: GoogleFonts.poppins(color: Colors.white),
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Registration successful! Please verify your email.',
+                style: GoogleFonts.poppins(color: Colors.white),
+              ),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
             ),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+          );
 
-        // Navigate based on user role
-        final userRole = response['user']['userType'].toString().toLowerCase();
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) {
-              if (userRole == 'nurse') {
-                return const DashboardScreen();
-              } else {
-                return const ContactsListScreen();
-              }
-            },
-          ),
-        );
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => OTPVerificationScreen(
+                userId: userId.toString(),
+                email: _emailController.text,
+              ),
+            ),
+          );
+        }
       }
     } catch (error) {
       setState(() {
         _errorMessage = error.toString();
       });
 
-      // Show error snackbar
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -216,14 +245,17 @@ class LoginPageState extends State<LoginPage>
 
 // Also update _validateForm to include email validation:
   bool _validateForm() {
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+    if (_fullNameController.text.isEmpty ||
+        _emailController.text.isEmpty ||
+        _passwordController.text.isEmpty ||
+        _phoneController.text.isEmpty) {
       setState(() {
         _errorMessage = 'Please fill in all required fields';
       });
       return false;
     }
 
-    // Basic email validation
+    // Email format validation
     final emailRegExp = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     if (!emailRegExp.hasMatch(_emailController.text)) {
       setState(() {
@@ -232,22 +264,7 @@ class LoginPageState extends State<LoginPage>
       return false;
     }
 
-    if (!isLogin) {
-      if (_fullNameController.text.isEmpty) {
-        setState(() {
-          _errorMessage = 'Please enter your full name';
-        });
-        return false;
-      }
-
-      if (_phoneController.text.isEmpty) {
-        setState(() {
-          _errorMessage = 'Please enter your phone number';
-        });
-        return false;
-      }
-    }
-
+    // Password length check
     if (_passwordController.text.length < 6) {
       setState(() {
         _errorMessage = 'Password must be at least 6 characters long';
@@ -310,6 +327,8 @@ class LoginPageState extends State<LoginPage>
 
                       // Submit Button
                       _buildSubmitButton(),
+                      const SizedBox(height: 8),
+                      _buildToggleButton(),
                       const SizedBox(height: 24),
                     ],
                   ),
@@ -533,7 +552,11 @@ class LoginPageState extends State<LoginPage>
           child: Text('Family Member/Relative'),
         ),
       ],
-      onChanged: (value) => setState(() => _selectedUserType = value),
+      onChanged: (value) {
+        if (value != null) {
+          setState(() => _selectedUserType = value);
+        }
+      },
     );
   }
 
@@ -588,6 +611,43 @@ class LoginPageState extends State<LoginPage>
                       letterSpacing: 0.5,
                     ),
                   ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildToggleButton() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: TextButton(
+        onPressed: () {
+          setState(() {
+            isLogin = !isLogin;
+            _errorMessage =
+                null; // Clear any error messages when switching modes
+          });
+        },
+        child: RichText(
+          text: TextSpan(
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              color: Colors.grey[600],
+            ),
+            children: [
+              TextSpan(
+                text: isLogin
+                    ? "Don't have an account? "
+                    : "Already have an account? ",
+              ),
+              TextSpan(
+                text: isLogin ? "Sign Up" : "Sign In",
+                style: TextStyle(
+                  color: Colors.blue[700],
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
         ),
       ),

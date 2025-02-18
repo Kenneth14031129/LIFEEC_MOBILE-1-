@@ -14,6 +14,11 @@ const userSchema = new mongoose.Schema({
   isArchived: { type: Boolean, default: false },
   archivedDate: { type: Date, default: null },
   createdAt: { type: Date, default: Date.now },
+  otp: {
+    code: String,
+    expiry: Date,
+    verified: { type: Boolean, default: false }
+  },
 });
 
 module.exports = mongoose.model("User", userSchema);

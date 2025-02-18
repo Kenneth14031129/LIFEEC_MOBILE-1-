@@ -3,8 +3,14 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const Message = require("../models/Message");
+const { sendOTP } = require('../utils/emailService');
 
-// Register new user
+// Generate OTP function
+const generateOTP = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+// Modify registerUser function
 exports.registerUser = async (req, res) => {
   try {
     const { fullName, email, password, phone, userType } = req.body;
@@ -23,6 +29,11 @@ exports.registerUser = async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
 
+    // Generate OTP
+    const otp = generateOTP();
+    const otpExpiry = new Date();
+    otpExpiry.setMinutes(otpExpiry.getMinutes() + 10); // OTP expires in 10 minutes
+
     // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
@@ -34,21 +45,108 @@ exports.registerUser = async (req, res) => {
       password: hashedPassword,
       phone,
       userType,
+      otp: {
+        code: otp,
+        expiry: otpExpiry,
+        verified: false
+      }
     });
 
     await user.save();
 
+    // Send OTP email
+    const emailSent = await sendOTP(email, otp);
+    if (!emailSent) {
+      return res.status(500).json({ message: "Failed to send verification email" });
+    }
+
     res.status(201).json({
+      message: "Registration successful. Please verify your email with the OTP sent.",
+      userId: user._id
+    });
+  } catch (error) {
+    console.error("Registration error:", error);
+    res.status(500).json({ message: "Server error during registration" });
+  }
+};
+
+// Add verify OTP endpoint
+exports.verifyOTP = async (req, res) => {
+  try {
+    const { userId, otp } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.otp.verified) {
+      return res.status(400).json({ message: "Email already verified" });
+    }
+
+    if (user.otp.code !== otp) {
+      return res.status(400).json({ message: "Invalid OTP" });
+    }
+
+    if (new Date() > user.otp.expiry) {
+      return res.status(400).json({ message: "OTP expired" });
+    }
+
+    user.otp.verified = true;
+    await user.save();
+
+    res.json({
       user: {
         id: user._id,
         fullName: user.fullName,
         email: user.email,
         userType: user.userType,
       },
+      message: "Email verified successfully"
     });
   } catch (error) {
-    console.error("Registration error:", error);
-    res.status(500).json({ message: "Server error during registration" });
+    console.error("OTP verification error:", error);
+    res.status(500).json({ message: "Server error during verification" });
+  }
+};
+
+// Add resend OTP endpoint
+exports.resendOTP = async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.otp.verified) {
+      return res.status(400).json({ message: "Email already verified" });
+    }
+
+    // Generate new OTP
+    const newOTP = generateOTP();
+    const otpExpiry = new Date();
+    otpExpiry.setMinutes(otpExpiry.getMinutes() + 10);
+
+    user.otp = {
+      code: newOTP,
+      expiry: otpExpiry,
+      verified: false
+    };
+
+    await user.save();
+
+    // Send new OTP
+    const emailSent = await sendOTP(user.email, newOTP);
+    if (!emailSent) {
+      return res.status(500).json({ message: "Failed to send verification email" });
+    }
+
+    res.json({ message: "New OTP sent successfully" });
+  } catch (error) {
+    console.error("Resend OTP error:", error);
+    res.status(500).json({ message: "Server error during OTP resend" });
   }
 };
 

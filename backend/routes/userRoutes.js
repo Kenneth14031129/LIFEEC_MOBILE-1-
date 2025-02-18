@@ -13,5 +13,7 @@ router.put("/change-password/:userId", userController.changePassword);
 router.get("/contacts", userController.getContactsList);
 router.get("/contacts/:userId", userController.getContactDetails);
 router.put("/archive/:userId", userController.archiveUser);
+router.post("/verify-otp", userController.verifyOTP);
+router.post("/resend-otp", userController.resendOTP);
 
 module.exports = router;
