@@ -16,10 +16,10 @@ exports.registerUser = async (req, res) => {
     const { fullName, email, password, phone, userType } = req.body;
 
     // Validate user type
-    const validUserTypes = ["nurse", "nutritionist", "relative"];
+    const validUserTypes = ["nurse", "nutritionist", "relative", "admin", "owner"];
     if (!validUserTypes.includes(userType)) {
       return res.status(400).json({
-        message: "Invalid user type. Must be nurse, nutritionist, or relative",
+        message: "Invalid user type. Must be nurse, nutritionist, relative, admin, or owner",
       });
     }
 
@@ -38,7 +38,7 @@ exports.registerUser = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create new user
+    // Create new user (with isVerified set to false by default)
     user = new User({
       fullName,
       email,
@@ -49,7 +49,8 @@ exports.registerUser = async (req, res) => {
         code: otp,
         expiry: otpExpiry,
         verified: false
-      }
+      },
+      isVerified: false // Explicitly set to false
     });
 
     await user.save();
@@ -62,7 +63,8 @@ exports.registerUser = async (req, res) => {
 
     res.status(201).json({
       message: "Registration successful. Please verify your email with the OTP sent.",
-      userId: user._id
+      userId: user._id,
+      isVerified: user.isVerified
     });
   } catch (error) {
     console.error("Registration error:", error);
@@ -164,13 +166,20 @@ exports.loginUser = async (req, res) => {
     // Check if user is archived
     if (user.isArchived) {
       return res.status(403).json({
-        message:
-          "This account has been archived. Please contact your administrator.",
+        message: "This account has been archived. Please contact your administrator.",
+      });
+    }
+
+    // Check if user is verified
+    if (!user.isVerified) {
+      return res.status(403).json({
+        message: "Account is pending verification. Please wait for admin approval.",
+        needsVerification: true
       });
     }
 
     // Validate user type
-    const validUserTypes = ["nurse", "nutritionist", "relative"];
+    const validUserTypes = ["admin", "owner", "nurse", "nutritionist", "relative"];
     if (!validUserTypes.includes(user.userType)) {
       return res.status(400).json({
         message: "Invalid user type. Please contact administrator",
@@ -190,12 +199,80 @@ exports.loginUser = async (req, res) => {
         email: user.email,
         userType: user.userType,
         isArchived: user.isArchived,
+        isVerified: user.isVerified,
         archivedDate: user.archivedDate,
       },
     });
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ message: "Server error during login" });
+  }
+};
+
+exports.approveUserVerification = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { currentAdminId } = req.body; // ID of the admin/owner approving
+
+    // Validate that the current user is an admin or owner
+    const adminUser = await User.findById(currentAdminId);
+    if (!adminUser || !['admin', 'owner'].includes(adminUser.userType)) {
+      return res.status(403).json({ message: "Unauthorized to verify users" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check if user is already verified
+    if (user.isVerified) {
+      return res.status(400).json({ message: "User is already verified" });
+    }
+
+    // Update user verification status
+    user.isVerified = true;
+    user.verifiedBy = currentAdminId;
+    await user.save();
+
+    res.json({ 
+      message: "User verified successfully",
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        isVerified: user.isVerified
+      }
+    });
+  } catch (error) {
+    console.error("User verification error:", error);
+    res.status(500).json({ message: "Server error during user verification" });
+  }
+};
+
+// Get unverified users (for admin/owner)
+exports.getUnverifiedUsers = async (req, res) => {
+  try {
+    const { currentAdminId } = req.query;
+
+    // Validate that the current user is an admin or owner
+    const adminUser = await User.findById(currentAdminId);
+    if (!adminUser || !['admin', 'owner'].includes(adminUser.userType)) {
+      return res.status(403).json({ message: "Unauthorized to view unverified users" });
+    }
+
+    // Find all unverified users
+    const unverifiedUsers = await User.find({ 
+      isVerified: false,
+      isArchived: false
+    }).select("fullName email userType createdAt");
+
+    res.json({
+      unverifiedUsers
+    });
+  } catch (error) {
+    console.error("Get unverified users error:", error);
+    res.status(500).json({ message: "Server error retrieving unverified users" });
   }
 };
 

@@ -15,5 +15,7 @@ router.get("/contacts/:userId", userController.getContactDetails);
 router.put("/archive/:userId", userController.archiveUser);
 router.post("/verify-otp", userController.verifyOTP);
 router.post("/resend-otp", userController.resendOTP);
+router.put("/approve-verification/:userId", userController.approveUserVerification);
+router.get("/unverified-users", userController.getUnverifiedUsers);
 
 module.exports = router;

@@ -8,7 +8,7 @@ const userSchema = new mongoose.Schema({
   phone: String,
   userType: {
     type: String,
-    enum: ["admin", "nurse", "nutritionist", "relative"],
+    enum: ["admin", "owner", "nurse", "nutritionist", "relative"],
     required: true,
   },
   isArchived: { type: Boolean, default: false },
@@ -19,6 +19,15 @@ const userSchema = new mongoose.Schema({
     expiry: Date,
     verified: { type: Boolean, default: false }
   },
+  isVerified: {
+    type: Boolean, 
+    default: false
+  },
+  verifiedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  }
 });
 
 module.exports = mongoose.model("User", userSchema);
