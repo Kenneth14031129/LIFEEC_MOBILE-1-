@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'login_page.dart';
 import 'dashboard.dart';
 import 'contact_list_screen.dart';
+import 'residents_list.dart';
 import 'otp_verification_screen.dart';
 
 void main() {
@@ -79,26 +80,26 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      // Define named routes
       routes: {
-    '/': (context) => const AuthWrapper(),
-    '/login': (context) => const LoginPage(),
-    '/dashboard': (context) => const DashboardScreen(),
-    '/contacts': (context) => const ContactsListScreen(),
-  },
-  onGenerateRoute: (settings) {
-    if (settings.name == '/verify-otp') {
-      final args = settings.arguments as Map<String, dynamic>;
-      return MaterialPageRoute(
-        builder: (context) => OTPVerificationScreen(
-          userId: args['userId'],
-          email: args['email'],
-        ),
-      );
-    }
-    return null;
-  },
-);
+        '/': (context) => const AuthWrapper(),
+        '/login': (context) => const LoginPage(),
+        '/dashboard': (context) => const DashboardScreen(),
+        '/contacts': (context) => const ContactsListScreen(),
+        '/residents': (context) => const ResidentsList(),
+      },
+      onGenerateRoute: (settings) {
+        if (settings.name == '/verify-otp') {
+          final args = settings.arguments as Map<String, dynamic>;
+          return MaterialPageRoute(
+            builder: (context) => OTPVerificationScreen(
+              userId: args['userId'],
+              email: args['email'],
+            ),
+          );
+        }
+        return null;
+      },
+    );
   }
 }
 
@@ -126,9 +127,20 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
     setState(() {
       if (userId != null && userRole != null) {
-        initialScreen = userRole.toLowerCase() == 'nurse'
-            ? const DashboardScreen()
-            : const ContactsListScreen();
+        // Determine initial screen based on user role
+        switch (userRole.toLowerCase()) {
+          case 'nurse':
+            initialScreen = const DashboardScreen();
+            break;
+          case 'nutritionist':
+            initialScreen = const ResidentsList(); // Nutritionists start at Residents List
+            break;
+          case 'relative':
+            initialScreen = const ContactsListScreen(); // Relatives start at Messages
+            break;
+          default:
+            initialScreen = const LoginPage();
+        }
       } else {
         initialScreen = const LoginPage();
       }

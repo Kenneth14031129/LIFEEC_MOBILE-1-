@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'login_page.dart';
 import 'notification_modal.dart';
 import 'profile_modal.dart';
 import 'residents_details.dart';
@@ -20,7 +21,7 @@ class ResidentsList extends StatefulWidget {
 class _ResidentsListState extends State<ResidentsList> {
   bool isLoading = true;
   List<Map<String, dynamic>> residents = [];
-  int _selectedIndex = 1;
+  late int _selectedIndex;
   String _searchQuery = '';
   String? _error;
   int _unreadNotifications = 0;
@@ -29,21 +30,41 @@ class _ResidentsListState extends State<ResidentsList> {
   String userRole = 'nurse';
 
   @override
-  void initState() {
-    super.initState();
-    _loadUserId();
-    _fetchResidents();
-    _fetchUnreadCount();
+void initState() {
+  super.initState();
+  // Initialize _selectedIndex with a default value before loading user role
+  _selectedIndex = 0;  // Default to first tab
+  _initializeSelectedIndex(); // This will update based on user role
+  _loadUserId();
+  _fetchResidents();
+  _fetchUnreadCount();
+}
+
+// Add this method
+  Future<void> _initializeSelectedIndex() async {
+    final prefs = await SharedPreferences.getInstance();
+    final role = prefs.getString('userRole') ?? 'nurse';
+
+    setState(() {
+      // For nutritionist, Residents List is index 0
+      _selectedIndex = role.toLowerCase() == 'nutritionist' ? 0 : 1;
+    });
   }
 
-  Future<void> _loadUserId() async {
+  Future<String?> _loadUserId() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      userId = prefs.getString('userId');
-    });
-    if (userId != null) {
+    final id = prefs.getString('userId');
+    final role = prefs.getString('userRole') ?? 'nurse';
+    if (mounted) {
+      setState(() {
+        userId = id;
+        userRole = role; // Make sure to update the userRole
+      });
+    }
+    if (id != null) {
       _loadUserData();
     }
+    return id;
   }
 
   Future<void> _loadUserData() async {
@@ -285,16 +306,13 @@ class _ResidentsListState extends State<ResidentsList> {
           _buildResidentsList(),
         ],
       ),
-      bottomNavigationBar: userRole.toLowerCase() == 'relative' ||
-              userRole.toLowerCase() == 'nutritionist'
-          ? null
-          : RoleNavigation(
-              userRole: userRole,
-              selectedIndex: _selectedIndex,
-              onItemSelected: (index) {
-                setState(() => _selectedIndex = index);
-              },
-            ),
+      bottomNavigationBar: RoleNavigation(
+        userRole: userRole,
+        selectedIndex: _selectedIndex,
+        onItemSelected: (index) {
+          setState(() => _selectedIndex = index);
+        },
+      ),
     );
   }
 
@@ -362,6 +380,14 @@ class _ResidentsListState extends State<ResidentsList> {
                               final prefs =
                                   await SharedPreferences.getInstance();
                               await prefs.clear();
+                              if (mounted) {
+                                Navigator.of(context, rootNavigator: true)
+                                    .pushAndRemoveUntil(
+                                  MaterialPageRoute(
+                                      builder: (context) => const LoginPage()),
+                                  (Route<dynamic> route) => false,
+                                );
+                              }
                             },
                           ),
                         );

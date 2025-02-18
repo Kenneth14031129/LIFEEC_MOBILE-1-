@@ -65,11 +65,30 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
   bool _isLoading = true;
   String? _error;
   String userRole = 'nurse';
-  int _selectedIndex = 2;
   String? userId;
   String userInitial = 'N';
   int _unreadNotifications = 0;
   String _searchQuery = '';
+  late int _selectedIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize _selectedIndex with a default value before loading user role
+    _selectedIndex = 2; // Default to Messages tab
+    _initializeSelectedIndex(); // This will update based on user role
+    _loadInitialData();
+  }
+
+  Future<void> _initializeSelectedIndex() async {
+    final prefs = await SharedPreferences.getInstance();
+    final role = prefs.getString('userRole') ?? 'nurse';
+
+    setState(() {
+      // For nutritionist, Messages should be index 1
+      _selectedIndex = role.toLowerCase() == 'nutritionist' ? 1 : 2;
+    });
+  }
 
   final TextEditingController _searchController = TextEditingController();
 
@@ -101,12 +120,6 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
     });
 
     return filtered.entries.toList();
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _loadInitialData();
   }
 
   Future<void> _loadInitialData() async {
@@ -582,16 +595,13 @@ class _ContactsListScreenState extends State<ContactsListScreen> {
             ),
         ],
       ),
-      bottomNavigationBar: userRole.toLowerCase() == 'relative' ||
-              userRole.toLowerCase() == 'nutritionist'
-          ? null
-          : RoleNavigation(
-              userRole: userRole,
-              selectedIndex: _selectedIndex,
-              onItemSelected: (index) {
-                setState(() => _selectedIndex = index);
-              },
-            ),
+      bottomNavigationBar: RoleNavigation(
+        userRole: userRole,
+        selectedIndex: _selectedIndex,
+        onItemSelected: (index) {
+          setState(() => _selectedIndex = index);
+        },
+      ),
     );
   }
 

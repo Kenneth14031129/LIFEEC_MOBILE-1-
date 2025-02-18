@@ -46,6 +46,26 @@ class RoleNavigation extends StatelessWidget {
           ),
         ];
 
+      case 'nutritionist':
+        return [
+          const BottomNavigationBarItem(
+            icon: Padding(
+              padding: EdgeInsets.symmetric(vertical: 4),
+              child: Icon(Icons.people_alt_rounded),
+            ),
+            label: 'Residents List',
+            tooltip: 'View Residents',
+          ),
+          const BottomNavigationBarItem(
+            icon: Padding(
+              padding: EdgeInsets.symmetric(vertical: 4),
+              child: Icon(Icons.message_rounded),
+            ),
+            label: 'Messages',
+            tooltip: 'View Messages',
+          ),
+        ];
+
       default:
         return [];
     }
@@ -54,7 +74,7 @@ class RoleNavigation extends StatelessWidget {
   Future<Widget> _handleNavigation(BuildContext context, int index) async {
     switch (userRole.toLowerCase()) {
       case 'nurse':
-        // For nurses, all screens
+        // For nurses, use the original navigation with dashboard
         switch (index) {
           case 0:
             return const DashboardScreen();
@@ -66,6 +86,17 @@ class RoleNavigation extends StatelessWidget {
             return const DashboardScreen();
         }
 
+      case 'nutritionist':
+        // For nutritionists, only toggle between residents list and messages
+        switch (index) {
+          case 0:
+            return const ResidentsList();
+          case 1:
+            return const ContactsListScreen();
+          default:
+            return const ContactsListScreen();
+        }
+
       default:
         return const ResidentsList();
     }
@@ -73,9 +104,8 @@ class RoleNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Don't show navigation bar for relatives and nutritionists
-    if (userRole.toLowerCase() == 'relative' ||
-        userRole.toLowerCase() == 'nutritionist') {
+    // Only hide navigation bar for relatives
+    if (userRole.toLowerCase() == 'relative') {
       return const SizedBox.shrink();
     }
 
