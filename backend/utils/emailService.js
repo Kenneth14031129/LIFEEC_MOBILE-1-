@@ -1,6 +1,82 @@
 // utils/emailService.js
 const nodemailer = require('nodemailer');
 
+const createEmailTemplate = (residentName, message, timestamp, emergencyContact = null) => {
+  const formattedTime = new Date(timestamp || Date.now()).toLocaleString('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short'
+  });
+
+  return `
+    <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <!-- Header with Logo -->
+      <div style="text-align: center; margin-bottom: 30px;">
+        <div style="background: linear-gradient(135deg, #dc3545 0%, #ff4d5a 100%); padding: 20px; border-radius: 10px;">
+          <h1 style="color: white; margin: 0; font-size: 28px; text-transform: uppercase; letter-spacing: 2px;">
+            Emergency Alert
+          </h1>
+        </div>
+      </div>
+
+      <!-- Alert Content -->
+      <div style="background-color: #fff; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); margin-bottom: 20px; overflow: hidden;">
+        <!-- Alert Header -->
+        <div style="background-color: #f8d7da; padding: 20px; border-bottom: 1px solid #f5c6cb;">
+          <h2 style="color: #721c24; margin: 0; font-size: 20px;">
+            ⚠️ Urgent Alert for ${residentName}
+          </h2>
+        </div>
+
+        <!-- Alert Body -->
+        <div style="padding: 20px;">
+          <div style="margin-bottom: 20px;">
+            <p style="font-size: 16px; color: #555; line-height: 1.6; margin: 0 0 15px;">
+              <strong style="color: #721c24;">Alert Message:</strong><br>
+              ${message}
+            </p>
+            <p style="font-size: 14px; color: #666; margin: 0;">
+              <strong>Time:</strong> ${formattedTime}
+            </p>
+          </div>
+
+          ${emergencyContact ? `
+          <!-- Emergency Contact Information -->
+          <div style="background-color: #f8f9fa; border-radius: 8px; padding: 15px; margin-top: 20px;">
+            <h3 style="color: #495057; margin: 0 0 15px; font-size: 16px;">Emergency Contact Details</h3>
+            <div style="font-size: 14px; color: #666;">
+              <p style="margin: 5px 0;"><strong>Name:</strong> ${emergencyContact.name || 'Not provided'}</p>
+              <p style="margin: 5px 0;"><strong>Phone:</strong> ${emergencyContact.phone || 'Not provided'}</p>
+              <p style="margin: 5px 0;"><strong>Relation:</strong> ${emergencyContact.relation || 'Not specified'}</p>
+            </div>
+          </div>
+          ` : ''}
+        </div>
+      </div>
+
+      <!-- Action Required Notice -->
+      <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+        <p style="color: #856404; margin: 0; font-size: 15px;">
+          <strong>⚡ Immediate Action Required:</strong><br>
+          Please check the LIFEEC application for complete details and required actions.
+        </p>
+      </div>
+
+      <!-- Footer -->
+      <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+        <p style="color: #666; font-size: 12px; margin: 0;">
+          This is an automated emergency alert from LIFEEC Alert System.<br>
+          Please do not reply to this email.
+        </p>
+        <div style="margin-top: 15px;">
+          <p style="color: #999; font-size: 11px; margin: 0;">
+            &copy; ${new Date().getFullYear()} LIFEEC. All rights reserved.
+          </p>
+        </div>
+      </div>
+    </div>
+  `;
+};
+
 // Create reusable transporter with better error handling and configuration
 const createTransporter = async () => {
   // Production transporter
@@ -10,13 +86,10 @@ const createTransporter = async () => {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
-    // Add these settings to handle gmail requirements
     tls: {
       rejectUnauthorized: false
     },
-    // Set higher timeout
     connectionTimeout: 10000,
-    // Retry settings
     pool: true,
     maxConnections: 3,
     maxMessages: 100,
@@ -24,7 +97,6 @@ const createTransporter = async () => {
     rateLimit: 5
   });
 
-  // Verify the connection configuration
   try {
     await prodTransporter.verify();
     console.log('Email transporter verified successfully');
@@ -56,7 +128,6 @@ const sendOTP = async (email, otp) => {
           <p>If you didn't request this code, please ignore this email.</p>
         </div>
       `,
-      // Add these headers to improve deliverability
       headers: {
         'X-Priority': '1',
         'X-MSMail-Priority': 'High',
@@ -86,20 +157,8 @@ const sendEmergencyEmail = async (recipient, residentName, message, retries = 3)
       address: process.env.EMAIL_USER
     },
     to: recipient,
-    subject: `URGENT: Emergency Alert for ${residentName}`,
-    html: `
-      <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #dc3545;">Emergency Alert</h2>
-        <div style="background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 4px; margin: 20px 0;">
-          <p><strong>Resident:</strong> ${residentName}</p>
-          <p><strong>Message:</strong> ${message}</p>
-          <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
-        </div>
-        <p style="color: #721c24;"><strong>Important:</strong> Please check the LIFEEC app for more details and required actions.</p>
-        <hr style="border: 0; border-top: 1px solid #ddd; margin: 20px 0;">
-        <p style="color: #666; font-size: 12px;">This is an automated emergency alert. Please do not reply to this email.</p>
-      </div>
-    `,
+    subject: `🚨 URGENT: Emergency Alert for ${residentName}`,
+    html: createEmailTemplate(residentName, message, Date.now()),
     priority: 'high',
     headers: {
       'X-Priority': '1',
@@ -120,7 +179,6 @@ const sendEmergencyEmail = async (recipient, residentName, message, retries = 3)
         console.error(`All ${retries} attempts failed for ${recipient}`);
         return false;
       }
-      // Wait before retrying (exponential backoff)
       await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
     }
   }
