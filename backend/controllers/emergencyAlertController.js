@@ -126,9 +126,40 @@ exports.createEmergencyAlert = async (req, res) => {
 // Get all emergency alerts
 exports.getEmergencyAlerts = async (req, res) => {
   try {
-    const alerts = await EmergencyAlert.find()
+    // Get the current user's ID and type from the request query
+    const { userId } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({ 
+        message: 'User ID is required',
+        error: 'Missing userId in query' 
+      });
+    }
+
+    // Find the current user
+    const currentUser = await User.findById(userId);
+    if (!currentUser) {
+      return res.status(404).json({ 
+        message: 'User not found',
+        error: 'Invalid userId' 
+      });
+    }
+
+    let alerts;
+    
+    if (currentUser.userType === 'relative') {
+      // For relatives, only show alerts for their associated resident
+      alerts = await EmergencyAlert.find({
+        residentId: currentUser.associatedResident
+      })
       .sort({ timestamp: -1 })
       .populate('residentId', 'fullName');
+    } else {
+      // For staff (nurses, admins, owners), show all alerts
+      alerts = await EmergencyAlert.find()
+        .sort({ timestamp: -1 })
+        .populate('residentId', 'fullName');
+    }
 
     res.status(200).json(alerts);
   } catch (error) {
