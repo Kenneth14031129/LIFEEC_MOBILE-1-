@@ -2,52 +2,21 @@
 const EmergencyAlert = require('../models/EmergencyAlert');
 const Resident = require('../models/Resident');
 const User = require('../models/User');
-const nodemailer = require('nodemailer');
-
-// Email configuration
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
-
-// Helper function to format date
-const formatDate = (date) => {
-  return new Date(date).toLocaleString('en-US', {
-    dateStyle: 'medium',
-    timeStyle: 'short'
-  });
-};
+const { sendEmergencyEmail } = require('../utils/emailService');
 
 // Helper function to send email notifications
 async function sendEmailNotification(recipient, residentName, message) {
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: recipient,
-    subject: `URGENT: Emergency Alert for ${residentName}`,
-    html: `
-      <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #dc3545;">Emergency Alert</h2>
-        <div style="background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 4px; margin: 20px 0;">
-          <p><strong>Resident:</strong> ${residentName}</p>
-          <p><strong>Message:</strong> ${message}</p>
-          <p><strong>Time:</strong> ${formatDate(new Date())}</p>
-        </div>
-        <p style="color: #721c24;"><strong>Important:</strong> Please check the LIFEEC app for more details and required actions.</p>
-        <hr style="border: 0; border-top: 1px solid #ddd; margin: 20px 0;">
-        <p style="color: #666; font-size: 12px;">This is an automated emergency alert. Please do not reply to this email.</p>
-      </div>
-    `
-  };
-
   try {
-    await transporter.sendMail(mailOptions);
-    console.log(`Email notification sent to ${recipient}`);
-    return true;
+    const result = await sendEmergencyEmail(recipient, residentName, message);
+    if (result) {
+      console.log(`Email notification sent to ${recipient}`);
+      return true;
+    } else {
+      console.error(`Failed to send email to ${recipient}`);
+      return false;
+    }
   } catch (error) {
-    console.error(`Failed to send email to ${recipient}:`, error);
+    console.error(`Error sending email to ${recipient}:`, error);
     return false;
   }
 }
