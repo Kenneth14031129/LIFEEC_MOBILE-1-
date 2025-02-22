@@ -140,7 +140,7 @@ exports.createEmergencyAlert = async (req, res) => {
     const emergencyAlert = new EmergencyAlert({
       residentId: resident._id,
       residentName: resident.fullName,
-      message: `Emergency alert triggered for ${resident.fullName}`,
+      message: `Emergency alert triggered`,
       emergencyContact: {
         name: resident.emergencyContact.name,
         phone: resident.emergencyContact.phone,
