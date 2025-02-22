@@ -93,25 +93,14 @@ exports.createEmergencyAlert = async (req, res) => {
 
     await emergencyAlert.save();
 
-    // Notify all relevant users
+    // Notify relevant users (staff and relative based on emergency contact email)
     const notificationResults = await notifyRelevantUsers(resident, emergencyAlert);
-
-    // Also send to emergency contact if provided
-    let emergencyContactNotified = false;
-    if (resident.emergencyContact.email) {
-      emergencyContactNotified = await sendEmailNotification(
-        resident.emergencyContact.email,
-        resident.fullName,
-        emergencyAlert.message
-      );
-    }
 
     res.status(201).json({ 
       message: 'Emergency alert created and notifications sent successfully',
       alert: emergencyAlert,
       notificationStats: {
-        ...notificationResults,
-        emergencyContactNotified
+        ...notificationResults
       }
     });
   } catch (error) {
@@ -123,10 +112,18 @@ exports.createEmergencyAlert = async (req, res) => {
   }
 };
 
-// Get all emergency alerts
+// Get all emergency alerts (filtered by user type and email)
 exports.getEmergencyAlerts = async (req, res) => {
   try {
-    const alerts = await EmergencyAlert.find()
+    const { userType, email } = req.query;
+    let query = {};
+
+    // If the user is a relative, only show alerts where their email matches the emergency contact
+    if (userType === 'relative' && email) {
+      query = { 'emergencyContact.email': email };
+    }
+
+    const alerts = await EmergencyAlert.find(query)
       .sort({ timestamp: -1 })
       .populate('residentId', 'fullName');
 
