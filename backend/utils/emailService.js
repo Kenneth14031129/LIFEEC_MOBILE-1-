@@ -4,7 +4,8 @@ const nodemailer = require('nodemailer');
 const createEmailTemplate = (residentName, message, timestamp, emergencyContact = null) => {
   const formattedTime = new Date(timestamp || Date.now()).toLocaleString('en-US', {
     dateStyle: 'medium',
-    timeStyle: 'short'
+    timeStyle: 'short',
+    timeZone: 'Asia/Singapore'
   });
 
   return `
