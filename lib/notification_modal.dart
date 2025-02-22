@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:timeago/timeago.dart' as timeago;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class NotificationBadge extends StatelessWidget {
   final int count;
@@ -98,69 +99,85 @@ class _NotificationModalState extends State<NotificationModal> {
   }
 
   Future<void> _fetchAlerts() async {
-    setState(() {
-      isLoading = true;
-      error = null;
-    });
+  setState(() {
+    isLoading = true;
+    error = null;
+  });
 
-    try {
-      final response = await http.get(
-        Uri.parse('https://lifeec-mobile-1.onrender.com/api/emergency-alerts'),
-        headers: {'Content-Type': 'application/json'},
-      );
+  try {
+    // Get user info from SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    final userType = prefs.getString('userRole') ?? 'nurse';
+    final userEmail = prefs.getString('userEmail') ?? '';
+    final userId = prefs.getString('userId') ?? '';
 
-      if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        final now = DateTime.now();
+    // Build query parameters
+    final queryString = Uri(queryParameters: {
+      'userType': userType,
+      'email': userEmail,
+      'userId': userId,
+    }).query;
 
-        // Process all alerts from the database
-        List<Map<String, dynamic>> allAlerts = data
-            .map((alert) => {
-                  'id': alert['_id'] ?? '',
-                  'residentName': alert['residentName'] ?? 'Unknown Resident',
-                  'message': alert['message'] ?? 'Emergency alert triggered',
-                  'timestamp':
-                      DateTime.tryParse(alert['timestamp'] ?? '') ?? now,
-                  'read': alert['read'] ?? false,
-                  'emergencyContact': {
-                    'name':
-                        alert['emergencyContact']?['name'] ?? 'Not provided',
-                    'phone':
-                        alert['emergencyContact']?['phone'] ?? 'Not provided',
-                    'relation': alert['emergencyContact']?['relation'] ??
-                        'Not specified',
-                  },
-                })
-            .toList();
+    final response = await http.get(
+      Uri.parse('https://lifeec-mobile-1.onrender.com/api/emergency-alerts?$queryString'),
+      headers: {'Content-Type': 'application/json'},
+    );
 
-        setState(() {
-          // Only show alerts less than 24 hours old in the UI
-          alerts = allAlerts.where((alert) {
-            final alertTime = alert['timestamp'] as DateTime;
-            final difference = now.difference(alertTime);
-            return difference.inHours < 24;
-          }).toList();
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body);
+      final now = DateTime.now();
 
-          isLoading = false;
+      // Process all alerts from the database
+      List<Map<String, dynamic>> allAlerts = data
+          .map((alert) => {
+                'id': alert['_id'] ?? '',
+                'residentName': alert['residentName'] ?? 'Unknown Resident',
+                'message': alert['message'] ?? 'Emergency alert triggered',
+                'timestamp': DateTime.tryParse(alert['timestamp'] ?? '') ?? now,
+                'read': alert['read'] ?? false,
+                'emergencyContact': {
+                  'name': alert['emergencyContact']?['name'] ?? 'Not provided',
+                  'phone': alert['emergencyContact']?['phone'] ?? 'Not provided',
+                  'relation': alert['emergencyContact']?['relation'] ?? 'Not specified',
+                  'email': alert['emergencyContact']?['email'] ?? 'Not provided',
+                },
+                // Add a flag to indicate if this alert is relevant for the current user
+                'isRelevant': userType == 'relative' ? 
+                    (alert['emergencyContact']?['email'] == userEmail) : true,
+              })
+          .toList();
 
-          // Update unread count for visible alerts only
-          final unreadCount =
-              alerts.where((alert) => !(alert['read'] as bool)).length;
-          widget.onUnreadCountChanged(unreadCount);
-        });
-      } else {
-        throw Exception('Failed to load alerts');
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error fetching alerts: $e');
-      }
       setState(() {
-        error = 'Failed to load alerts. Please try again.';
+        // Only show alerts less than 24 hours old and relevant to the user
+        alerts = allAlerts.where((alert) {
+          final alertTime = alert['timestamp'] as DateTime;
+          final difference = now.difference(alertTime);
+          return difference.inHours < 24 && alert['isRelevant'] == true;
+        }).toList();
+
         isLoading = false;
+
+        // Update unread count for visible and relevant alerts only
+        final unreadCount = alerts
+            .where((alert) => 
+                !(alert['read'] as bool) && 
+                alert['isRelevant'] == true)
+            .length;
+        widget.onUnreadCountChanged(unreadCount);
       });
+    } else {
+      throw Exception('Failed to load alerts');
     }
+  } catch (e) {
+    if (kDebugMode) {
+      print('Error fetching alerts: $e');
+    }
+    setState(() {
+      error = 'Failed to load alerts. Please try again.';
+      isLoading = false;
+    });
   }
+}
 
   Future<void> _markAsRead(String alertId) async {
     if (alertId.isEmpty) return;
